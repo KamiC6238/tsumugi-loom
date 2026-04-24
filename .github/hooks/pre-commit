@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -eu
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+node scripts/check-doc-updates.js
+node scripts/migrate-completed-plans.js
+git add docs/exec-plans/active docs/exec-plans/completed >/dev/null 2>&1 || true
+node scripts/check-docs-freshness.js
+node scripts/check-docs-consistency.js
