@@ -1,0 +1,51 @@
+{
+  "$schema": "../../../docs/process/plan-artifact.schema.json",
+  "schemaVersion": "1.0.0",
+  "workflowId": "20260424-183258-plan-skill-smoke",
+  "planStatus": "TODO: 选择 ready 或 needs_clarification",
+  "goal": "验证结构化 plan 模板",
+  "sourceUserRequest": "TODO: 用简洁语言概括用户原始需求。",
+  "problem": "TODO: 描述本次回合真正要解决的问题。",
+  "scope": [
+    "TODO:"
+  ],
+  "outOfScope": [
+    "TODO:"
+  ],
+  "constraints": [
+    "TODO:"
+  ],
+  "assumptions": [
+    "TODO:"
+  ],
+  "openQuestions": [
+    {
+      "question": "TODO: 如果没有阻塞问题，请写明无阻塞问题。",
+      "blocking": true
+    }
+  ],
+  "taskBreakdown": [
+    {
+      "id": "T1",
+      "title": "TODO:",
+      "description": "TODO:"
+    }
+  ],
+  "acceptanceCriteria": [
+    "TODO:"
+  ],
+  "testStrategy": [
+    "TODO:"
+  ],
+  "docsImpact": [
+    "TODO:"
+  ],
+  "relevantKnowledgeBaseSlices": [
+    "ARCHITECTURE.md",
+    "docs/CONVENTIONS.md",
+    "docs/DOMAIN.md",
+    "TSUMUGI_LOOM_DISCUSSION_SUMMARY.zh-CN.md",
+    "TSUMUGI_LOOM_KNOWLEDGE_BASE_PROPOSAL.zh-CN.md"
+  ],
+  "handoffNotesForCoding": "TODO: 给 Coding 阶段明确交接边界和优先顺序。"
+}
