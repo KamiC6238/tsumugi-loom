@@ -3,6 +3,7 @@ import path from 'node:path'
 import Ajv2020 from 'ajv/dist/2020.js'
 import {
   buildKnowledgeDeltaTemplate,
+  canonicalWorkflowNodeIds,
   codingStageArtifactFiles,
   codingStageMarkdownArtifactFiles,
   createWorkflowId,
@@ -130,6 +131,14 @@ const requiredReviewSections = [
   '## Scope Reviewed',
   '## Findings',
   '## Risks and Regressions',
+  '## Required Rework',
+  '## Resolution Notes',
+]
+
+const requiredTestReviewSections = [
+  '## Scope Reviewed',
+  '## Findings',
+  '## False-Green Risks',
   '## Required Rework',
   '## Resolution Notes',
 ]
@@ -423,6 +432,11 @@ function validateCandidateFact(candidateFact, index) {
   const requiredKeys = ['fact', 'type', 'rationale', 'supportingArtifacts', 'freshness']
   const issues = []
 
+  if (!candidateFact || typeof candidateFact !== 'object' || Array.isArray(candidateFact)) {
+    issues.push(`candidateFacts[${index}] 必须是对象`)
+    return issues
+  }
+
   for (const key of requiredKeys) {
     if (!(key in candidateFact)) {
       issues.push(`candidateFacts[${index}] 缺少字段 ${key}`)
@@ -431,6 +445,71 @@ function validateCandidateFact(candidateFact, index) {
 
   if ('supportingArtifacts' in candidateFact && !Array.isArray(candidateFact.supportingArtifacts)) {
     issues.push(`candidateFacts[${index}].supportingArtifacts 必须是数组`)
+  }
+
+  return issues
+}
+
+function validateKnowledgeDeltaArtifact(knowledgeDelta) {
+  const issues = []
+
+  if (!knowledgeDelta || typeof knowledgeDelta !== 'object') {
+    issues.push('knowledge-delta.json 必须是对象')
+    return issues
+  }
+
+  if (typeof knowledgeDelta.sourceWorkflowId !== 'string' || knowledgeDelta.sourceWorkflowId.length === 0) {
+    issues.push('knowledge-delta.json 缺少 sourceWorkflowId 字段')
+  }
+
+  if (!Array.isArray(knowledgeDelta.sourceNodeIds)) {
+    issues.push('knowledge-delta.json 中的 sourceNodeIds 必须是数组')
+  } else {
+    const sourceNodeIdsMatch =
+      knowledgeDelta.sourceNodeIds.length === canonicalWorkflowNodeIds.length &&
+      knowledgeDelta.sourceNodeIds.every((nodeId, index) => nodeId === canonicalWorkflowNodeIds[index])
+
+    if (!sourceNodeIdsMatch) {
+      issues.push(
+        `knowledge-delta.json 中的 sourceNodeIds 必须为: ${canonicalWorkflowNodeIds.join(', ')}`,
+      )
+    }
+  }
+
+  if (typeof knowledgeDelta.timestamp !== 'string' || knowledgeDelta.timestamp.length === 0) {
+    issues.push('knowledge-delta.json 缺少 timestamp 字段')
+  }
+
+  if (!Array.isArray(knowledgeDelta.candidateFacts)) {
+    issues.push('knowledge-delta.json 中的 candidateFacts 必须是数组')
+  }
+
+  if (!Array.isArray(knowledgeDelta.affectedAreas)) {
+    issues.push('knowledge-delta.json 中的 affectedAreas 必须是数组')
+  } else if (knowledgeDelta.affectedAreas.some((area) => typeof area !== 'string' || area.length === 0)) {
+    issues.push('knowledge-delta.json 中的 affectedAreas 必须只包含非空字符串')
+  }
+
+  if (typeof knowledgeDelta.confidence !== 'string' || knowledgeDelta.confidence.length === 0) {
+    issues.push('knowledge-delta.json 缺少 confidence 字段')
+  }
+
+  if (!Array.isArray(knowledgeDelta.evidence)) {
+    issues.push('knowledge-delta.json 中的 evidence 必须是数组')
+  } else if (knowledgeDelta.evidence.some((item) => typeof item !== 'string' || item.length === 0)) {
+    issues.push('knowledge-delta.json 中的 evidence 必须只包含非空字符串')
+  }
+
+  if (!Array.isArray(knowledgeDelta.recommendedTargets)) {
+    issues.push('knowledge-delta.json 中的 recommendedTargets 必须是数组')
+  } else if (
+    knowledgeDelta.recommendedTargets.some((target) => typeof target !== 'string' || target.length === 0)
+  ) {
+    issues.push('knowledge-delta.json 中的 recommendedTargets 必须只包含非空字符串')
+  }
+
+  if (typeof knowledgeDelta.reviewRequired !== 'boolean') {
+    issues.push('knowledge-delta.json 中的 reviewRequired 必须是布尔值')
   }
 
   return issues
@@ -466,6 +545,18 @@ async function getPlanJsonValidator() {
 function extractSingleLineValue(content, label) {
   const match = content.match(new RegExp(`^${label}:\\s*(.+)$`, 'm'))
   return match ? match[1].trim() : null
+}
+
+function extractMarkdownSection(content, heading) {
+  const match = content.match(new RegExp(`${heading}\\n\\n([\\s\\S]*?)(?=\\n## |$)`))
+  return match ? match[1].trim() : ''
+}
+
+function extractOrderedListItems(sectionContent) {
+  return sectionContent
+    .split('\n')
+    .map((line) => line.match(/^\d+\.\s+(.*)$/)?.[1].trim())
+    .filter(Boolean)
 }
 
 async function validatePlanJsonArtifact(rawContent, workflowId) {
@@ -544,12 +635,26 @@ function validateClarificationArtifact(content, planData) {
 
 function validateReviewArtifact(content) {
   const issues = []
+  const warnings = []
   const reviewStatus = extractSingleLineValue(content, 'Review Status')
+  const reviewRoundRaw = extractSingleLineValue(content, 'Review Round')
+  const reviewDisposition = extractSingleLineValue(content, 'Review Disposition')
   const reviewerAgent = extractSingleLineValue(content, 'Reviewer Agent')
+  const reviewRound = Number.parseInt(reviewRoundRaw ?? '', 10)
+  const requiredReworkItems = extractOrderedListItems(extractMarkdownSection(content, '## Required Rework'))
+  const unresolvedReworkItems = requiredReworkItems.filter((item) => !/^无([。.]?)$/u.test(item))
 
   if (!reviewStatus) {
     issues.push('review.md 缺少 Review Status 字段')
-    return issues
+    return { issues, warnings }
+  }
+
+  if (!reviewRoundRaw) {
+    issues.push('review.md 缺少 Review Round 字段')
+  }
+
+  if (!reviewDisposition) {
+    issues.push('review.md 缺少 Review Disposition 字段')
   }
 
   if (!reviewerAgent) {
@@ -566,8 +671,84 @@ function validateReviewArtifact(content) {
     issues.push('review.md 的 Review Status 只能是 pending、changes_requested 或 approved')
   }
 
+  if (reviewRoundRaw && (!Number.isInteger(reviewRound) || reviewRound < 1 || reviewRound > 3)) {
+    issues.push('review.md 的 Review Round 只能是 1、2 或 3')
+  }
+
+  if (
+    reviewDisposition &&
+    !['rework_required', 'proceed_with_known_issues', 'approved'].includes(reviewDisposition)
+  ) {
+    issues.push(
+      'review.md 的 Review Disposition 只能是 rework_required、proceed_with_known_issues 或 approved',
+    )
+  }
+
+  if (reviewStatus === 'approved') {
+    if (reviewDisposition && reviewDisposition !== 'approved') {
+      issues.push('review.md 为 approved 时，Review Disposition 必须为 approved')
+    }
+  } else if (reviewStatus === 'changes_requested') {
+    if (reviewRound === 3) {
+      if (reviewDisposition && reviewDisposition !== 'proceed_with_known_issues') {
+        issues.push(
+          'review.md 在第 3 轮仍为 changes_requested 时，Review Disposition 必须为 proceed_with_known_issues',
+        )
+      }
+
+      if (unresolvedReworkItems.length === 0) {
+        issues.push('review.md 在第 3 轮继续进入 reconcile 时，## Required Rework 不能为“无”')
+      } else {
+        warnings.push(
+          'review.md 在第 3 轮后带着已知问题继续进入 reconcile；请在界面中展示 Required Rework 并允许人工介入',
+        )
+      }
+    } else {
+      if (reviewDisposition && reviewDisposition !== 'rework_required') {
+        issues.push(
+          'review.md 在前 2 轮为 changes_requested 时，Review Disposition 必须为 rework_required',
+        )
+      }
+
+      issues.push(
+        'review.md 只有在 approved，或第 3 轮 changes_requested 且 Review Disposition = proceed_with_known_issues 时，workflow 才能进入 reconcile',
+      )
+    }
+  } else {
+    issues.push(
+      'review.md 只有在 approved，或第 3 轮 changes_requested 且 Review Disposition = proceed_with_known_issues 时，workflow 才能进入 reconcile',
+    )
+  }
+
+  return { issues, warnings }
+}
+
+function validateTestReviewArtifact(content) {
+  const issues = []
+  const reviewStatus = extractSingleLineValue(content, 'Review Status')
+  const reviewerAgent = extractSingleLineValue(content, 'Reviewer Agent')
+
+  if (!reviewStatus) {
+    issues.push('test-review.md 缺少 Review Status 字段')
+    return issues
+  }
+
+  if (!reviewerAgent) {
+    issues.push('test-review.md 缺少 Reviewer Agent 字段')
+  }
+
+  const missingSections = requiredTestReviewSections.filter((heading) => !content.includes(heading))
+
+  if (missingSections.length > 0) {
+    issues.push(`test-review.md 缺少结构段落: ${missingSections.join(', ')}`)
+  }
+
+  if (!['pending', 'changes_requested', 'approved'].includes(reviewStatus)) {
+    issues.push('test-review.md 的 Review Status 只能是 pending、changes_requested 或 approved')
+  }
+
   if (reviewStatus !== 'approved') {
-    issues.push('review.md 的 Review Status 必须为 approved，workflow 才能进入 reconcile')
+    issues.push('test-review.md 的 Review Status 必须为 approved，workflow 才能结束 Coding')
   }
 
   return issues
@@ -648,12 +829,12 @@ export async function validateWorkflow(workflowId) {
     result.issues.push('manifest.json 中的 workflowId 与目录名不一致')
   }
 
-  if (result.knowledgeDelta && result.knowledgeDelta.sourceWorkflowId !== workflowId) {
-    result.issues.push('knowledge-delta.json 中的 sourceWorkflowId 与目录名不一致')
+  if (result.knowledgeDelta) {
+    result.issues.push(...validateKnowledgeDeltaArtifact(result.knowledgeDelta))
   }
 
-  if (result.knowledgeDelta && !Array.isArray(result.knowledgeDelta.candidateFacts)) {
-    result.issues.push('knowledge-delta.json 中的 candidateFacts 必须是数组')
+  if (result.knowledgeDelta && result.knowledgeDelta.sourceWorkflowId !== workflowId) {
+    result.issues.push('knowledge-delta.json 中的 sourceWorkflowId 与目录名不一致')
   }
 
   if (Array.isArray(result.knowledgeDelta?.candidateFacts)) {
@@ -677,9 +858,15 @@ export async function validateWorkflow(workflowId) {
   result.issues.push(...validateClarificationArtifact(clarificationMarkdownContent, result.planData))
 
   if (result.planData?.planStatus === 'ready') {
+    const testReviewMarkdownPath = path.join(workflowPath, 'test-review.md')
+    const testReviewMarkdownContent = await fs.readFile(testReviewMarkdownPath, 'utf8')
+    result.issues.push(...validateTestReviewArtifact(testReviewMarkdownContent))
+
     const reviewMarkdownPath = path.join(workflowPath, 'review.md')
     const reviewMarkdownContent = await fs.readFile(reviewMarkdownPath, 'utf8')
-    result.issues.push(...validateReviewArtifact(reviewMarkdownContent))
+    const reviewValidation = validateReviewArtifact(reviewMarkdownContent)
+    result.issues.push(...reviewValidation.issues)
+    result.warnings.push(...reviewValidation.warnings)
   }
 
   if (result.planData?.planStatus === 'needs_clarification') {

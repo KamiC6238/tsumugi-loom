@@ -17,6 +17,10 @@
     "loom:workflow:reconcile": "node scripts/loom/reconcile-workflow.mjs"
   },
   "dependencies": {
+    "@vue-flow/background": "^1.3.2",
+    "@vue-flow/controls": "^1.1.3",
+    "@vue-flow/core": "^1.48.2",
+    "@vue-flow/minimap": "^1.5.4",
     "vue": "^3.5.32"
   },
   "devDependencies": {

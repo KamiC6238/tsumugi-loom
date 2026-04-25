@@ -1,0 +1,41 @@
+{
+  "workflowId": "20260425-095256-vue-flow-mvp-five-node-dag-spike",
+  "slug": "vue-flow-mvp-five-node-dag-spike",
+  "goal": "Spike a Vue Flow MVP for a five-node DAG workflow.",
+  "status": "review_approved",
+  "createdAt": "2026-04-25T01:52:56.662Z",
+  "planSchema": "docs/process/PLAN_ARTIFACT_SCHEMA.zh-CN.md",
+  "planJsonSchema": "docs/process/plan-artifact.schema.json",
+  "clarificationGuide": "docs/process/CLARIFICATION_ARTIFACT.zh-CN.md",
+  "planningSkill": ".github/skills/plan-writer/SKILL.md",
+  "codingGuide": "docs/process/TDD_CODING_WORKFLOW.zh-CN.md",
+  "reviewGuide": "docs/process/CODE_REVIEW_WORKFLOW.zh-CN.md",
+  "codingSkill": ".github/skills/tdd-coding-writer/SKILL.md",
+  "reviewSkill": ".github/skills/code-review-writer/SKILL.md",
+  "testReviewerAgent": ".github/agents/test-case-reviewer.agent.md",
+  "codeReviewerAgent": ".github/agents/code-reviewer.agent.md",
+  "sourceDesignDocs": [
+    "TSUMUGI_LOOM_DISCUSSION_SUMMARY.zh-CN.md",
+    "TSUMUGI_LOOM_KNOWLEDGE_BASE_PROPOSAL.zh-CN.md"
+  ],
+  "canonicalDocs": [
+    "ARCHITECTURE.md",
+    "docs/CONVENTIONS.md",
+    "docs/DOMAIN.md",
+    "docs/decisions/",
+    "docs/generated/run-knowledge/"
+  ],
+  "artifactFiles": [
+    "manifest.json",
+    "plan.md",
+    "plan.json",
+    "clarification.md",
+    "code-change.md",
+    "test-report.md",
+    "review.md",
+    "final-summary.md",
+    "knowledge-delta.json",
+    "tdd-cycle.md",
+    "test-review.md"
+  ]
+}

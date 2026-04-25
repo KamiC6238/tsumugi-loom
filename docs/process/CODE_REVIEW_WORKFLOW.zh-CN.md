@@ -27,11 +27,13 @@ Review 阶段不是泛化的“再看一遍”，而是用独立 subagent 对已
 对当前 workflow 执行以下顺序：
 
 1. 读取 plan、coding 和 test 阶段 artifacts。
-2. 调用 code reviewer subagent 做独立审查。
-3. 如果 reviewer 返回 `changes_requested`，先回到 Coding/Test 修正。
+2. 调用 code reviewer subagent 做第 1 轮独立审查。
+3. 如果 reviewer 返回 `changes_requested` 且当前还没到第 3 轮，先回到 Coding/Test 修正。
 4. 修正后重新运行必要验证。
-5. 再次调用 reviewer，直到 verdict 为 `approved`。
-6. 用最终结论更新 `review.md`。
+5. 最多执行 3 轮 reviewer 调用，包含首轮 review 和后续复审。
+6. 只要任一轮 verdict 为 `approved`，就把 `review.md` 写成 `Review Status = approved`、`Review Disposition = approved`。
+7. 如果第 3 轮后仍是 `changes_requested`，就把 `review.md` 写成 `Review Status = changes_requested`、`Review Round = 3`、`Review Disposition = proceed_with_known_issues`，并记录尚未解决的问题。
+8. 第 3 轮结束后不要继续自动复审，workflow 直接进入 docs reconcile，同时在界面中向用户显示这些未解决问题。
 
 ## 4. Reviewer 关注点
 
@@ -55,6 +57,6 @@ Review 阶段至少维护：
 
 一个 workflow 的 Review 阶段只有在以下条件同时满足时才算完成：
 
-1. reviewer verdict 为 `approved`。
-2. `review.md` 已补齐且 `Review Status = approved`。
-3. 没有待处理的 `changes_requested` 项。
+1. reviewer verdict 为 `approved`，或者第 3 轮后采用 `Review Disposition = proceed_with_known_issues`。
+2. `review.md` 已补齐，且包含 `Review Round` 与 `Review Disposition`。
+3. 如果还有待处理的 `changes_requested` 项，它们必须被明确保留在 `Required Rework` 中并对用户可见。

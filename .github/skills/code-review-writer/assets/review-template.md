@@ -4,6 +4,8 @@ Workflow ID: {{WORKFLOW_ID}}
 Review Skill: .github/skills/code-review-writer/SKILL.md
 Reviewer Agent: .github/agents/code-reviewer.agent.md
 Review Status: TODO: 选择 pending、changes_requested 或 approved
+Review Round: TODO: 填 1、2 或 3
+Review Disposition: TODO: 选择 rework_required、proceed_with_known_issues 或 approved
 
 ## Scope Reviewed
 

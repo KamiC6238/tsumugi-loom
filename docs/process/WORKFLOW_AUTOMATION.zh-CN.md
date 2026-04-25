@@ -131,8 +131,10 @@ Test 阶段的职责则是：
 Review 阶段的职责则是：
 
 1. 调用 `.github/agents/code-reviewer.agent.md` 做独立 code review。
-2. 如果 verdict 为 `changes_requested`，把问题退回 Coding/Test 修正。
-3. 只有 `review.md` 最终为 `approved`，才进入 reconcile。
+2. 如果 verdict 为 `changes_requested` 且还没到第 3 轮，把问题退回 Coding/Test 修正，并做必要的窄验证后重新送审。
+3. Review 最多执行 3 轮；第 3 轮后仍未 `approved` 时，workflow 直接进入 reconcile，不继续自动循环。
+4. `review.md` 必须记录 `Review Round`、`Review Status` 和 `Review Disposition`，并把未解决问题保留给用户处理。
+5. 界面必须能显示 review findings 和未解决 follow-up，确保人可以接手。
 
 ### 3.4 生成 run knowledge
 

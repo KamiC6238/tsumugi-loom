@@ -1,0 +1,27 @@
+{
+  "sourceWorkflowId": "20260425-095256-vue-flow-mvp-five-node-dag-spike",
+  "sourceNodeIds": [
+    "plan",
+    "coding",
+    "test",
+    "review",
+    "docs-reconciler"
+  ],
+  "timestamp": "2026-04-25T01:52:56.662Z",
+  "candidateFacts": [],
+  "affectedAreas": [],
+  "confidence": "medium",
+  "evidence": [
+    "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/plan.md",
+    "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/plan.json",
+    "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/clarification.md",
+    "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/tdd-cycle.md",
+    "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/test-review.md",
+    "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/code-change.md",
+    "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/test-report.md",
+    "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/review.md",
+    "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/final-summary.md"
+  ],
+  "recommendedTargets": [],
+  "reviewRequired": false
+}

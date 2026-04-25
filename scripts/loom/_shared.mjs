@@ -132,10 +132,18 @@ export async function readJsonFile(filePath) {
   return JSON.parse(raw)
 }
 
+export const canonicalWorkflowNodeIds = [
+  'plan',
+  'coding',
+  'test',
+  'review',
+  'docs-reconciler',
+]
+
 export function buildKnowledgeDeltaTemplate(workflowId, createdAt) {
   return {
     sourceWorkflowId: workflowId,
-    sourceNodeIds: ['plan', 'coding', 'test', 'review', 'docs-reconciler'],
+    sourceNodeIds: [...canonicalWorkflowNodeIds],
     timestamp: createdAt,
     candidateFacts: [],
     affectedAreas: [],
