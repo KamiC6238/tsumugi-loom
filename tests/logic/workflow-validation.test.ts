@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { validateWorkflow } from '../../scripts/loom/workflow.mjs'
+import { upsertCanonicalKnowledgeEntry, validateWorkflow } from '../../scripts/loom/workflow.mjs'
 
 const currentFilePath = fileURLToPath(import.meta.url)
 const currentDirPath = path.dirname(currentFilePath)
@@ -46,6 +46,33 @@ async function cloneWorkflowFixture() {
 }
 
 describe('validateWorkflow', () => {
+  it('appends new canonical facts to populated managed sections', () => {
+    const existingContent = `# Example\n\n## 6. Workflow-verified Rules\n\n<!-- BEGIN AUTO-KB:CONVENTIONS -->\n- Existing fact\n  - workflow: 20260424-181535-scaffold-smoke-test\n  - freshness: verified-2026-04-24\n  - rationale: Existing rationale.\n  - supportingArtifacts:\n    - artifacts/workflows/20260424-181535-scaffold-smoke-test/code-change.md\n<!-- END AUTO-KB:CONVENTIONS -->\n`
+
+    const result = upsertCanonicalKnowledgeEntry(
+      existingContent,
+      {
+        title: '## 6. Workflow-verified Rules',
+        marker: 'CONVENTIONS',
+      },
+      {
+        fact: 'New fact',
+        rationale: 'New rationale.',
+        supportingArtifacts: ['artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/code-change.md'],
+        freshness: 'verified-2026-04-25',
+      },
+      fixtureWorkflowId,
+    )
+
+    expect(result.status).toBe('applied')
+    expect(result.content).toContain('- Existing fact')
+    expect(result.content).toContain('- New fact')
+    expect(result.content.indexOf('- Existing fact')).toBeLessThan(result.content.indexOf('- New fact'))
+    expect(result.content.indexOf('- New fact')).toBeLessThan(
+      result.content.indexOf('<!-- END AUTO-KB:CONVENTIONS -->'),
+    )
+  })
+
   it('accepts the completed Vue Flow spike workflow bundle', async () => {
     const result = await validateWorkflow(fixtureWorkflowId)
 

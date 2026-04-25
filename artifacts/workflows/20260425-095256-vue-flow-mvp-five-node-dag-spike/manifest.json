@@ -2,7 +2,7 @@
   "workflowId": "20260425-095256-vue-flow-mvp-five-node-dag-spike",
   "slug": "vue-flow-mvp-five-node-dag-spike",
   "goal": "Spike a Vue Flow MVP for a five-node DAG workflow.",
-  "status": "review_approved",
+  "status": "knowledge_base_updated",
   "createdAt": "2026-04-25T01:52:56.662Z",
   "planSchema": "docs/process/PLAN_ARTIFACT_SCHEMA.zh-CN.md",
   "planJsonSchema": "docs/process/plan-artifact.schema.json",
@@ -37,5 +37,14 @@
     "knowledge-delta.json",
     "tdd-cycle.md",
     "test-review.md"
+  ],
+  "reconciledAt": "2026-04-25T03:27:33.276Z",
+  "knowledgeBaseUpdatedAt": "2026-04-25T03:24:30.584Z",
+  "generatedRunKnowledge": "docs/generated/run-knowledge/20260425-095256-vue-flow-mvp-five-node-dag-spike.md",
+  "reconciliationReport": "artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/reconciliation.md",
+  "updatedCanonicalDocs": [
+    "ARCHITECTURE.md",
+    "docs/CONVENTIONS.md",
+    "docs/DOMAIN.md"
   ]
 }

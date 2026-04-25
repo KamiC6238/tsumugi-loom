@@ -105,6 +105,7 @@ describe('workflowGraph', () => {
 
     expect(getStageById('docs-reconciler')).toMatchObject({
       reviewer: null,
+      skill: 'docs-reconciler',
       status: 'blocked',
       entryCriteria: expect.stringContaining('review.md is approved or after round 3'),
     })

@@ -126,4 +126,12 @@ Docs Reconciler 的写回规则：
     - artifacts/workflows/20260424-181535-scaffold-smoke-test/plan.md
     - artifacts/workflows/20260424-181535-scaffold-smoke-test/code-change.md
     - artifacts/workflows/20260424-181535-scaffold-smoke-test/test-report.md
+- ready workflow 的 validate 门禁现在要求 test-review 为 approved，并校验 review 第三轮放行规则、knowledge-delta 最小结构与 canonical sourceNodeIds。
+  - workflow: 20260425-095256-vue-flow-mvp-five-node-dag-spike
+  - freshness: verified-2026-04-25
+  - rationale: scripts/loom/workflow.mjs 和对应逻辑测试已经把 test-review gate、review 放行条件以及 knowledge-delta 校验固化到 validate 流程中。
+  - supportingArtifacts:
+    - artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/code-change.md
+    - artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/test-report.md
+    - artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/review.md
 <!-- END AUTO-KB:CONVENTIONS -->

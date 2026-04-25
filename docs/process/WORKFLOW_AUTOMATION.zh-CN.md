@@ -18,6 +18,8 @@ Coding 阶段默认通过 workspace skill `.github/skills/tdd-coding-writer/SKIL
 
 Review 阶段默认通过 workspace skill `.github/skills/code-review-writer/SKILL.md` 执行。这个 skill 会按 `docs/process/CODE_REVIEW_WORKFLOW.zh-CN.md` 调用 `.github/agents/code-reviewer.agent.md` 做独立 code review，并把结论写回 `review.md`。
 
+Docs Reconciler 阶段默认通过 workspace skill `.github/skills/docs-reconciler/SKILL.md` 执行。这个 skill 会按 `docs/process/DOCS_RECONCILE_WORKFLOW.zh-CN.md` 读取最新 workflow 的 artifacts、整理 knowledge delta，并调用 reconcile 脚本把稳定事实增量写回 canonical docs。
+
 这里的关键边界是：TDD 属于 Coding 阶段内部的执行纪律，而不是一个单独的“先写测试”平行阶段。Test 阶段负责完整测试运行、回归验证和跨 step 检查，不负责生成测试用例。
 
 ## 2. 命令入口
@@ -113,7 +115,7 @@ pnpm loom:workflow:validate -- <workflow-id>
 6. 如果 plan status 已是 `ready`，则 tdd-cycle.md 和 test-review.md 必须存在。
 7. 如果 plan status 已是 `ready`，则 tdd-cycle.md 和 test-review.md 不能保留 TODO 占位。
 8. 如果 plan status 已是 `ready`，则 review.md 必须是结构化 code review artifact。
-9. 如果 plan status 已是 `ready`，则 review.md 的 `Review Status` 必须为 `approved`。
+9. 如果 plan status 已是 `ready`，则 review.md 必须给出可进入 reconcile 的最终结论：要么 `approved`，要么第 3 轮后以 `Review Disposition = proceed_with_known_issues` 继续。
 
 Coding 阶段还应遵守以下 TDD 规则：
 
@@ -137,6 +139,8 @@ Review 阶段的职责则是：
 5. 界面必须能显示 review findings 和未解决 follow-up，确保人可以接手。
 
 ### 3.4 生成 run knowledge
+
+推荐通过 workspace skill `.github/skills/docs-reconciler/SKILL.md` 驱动这一阶段，而不是手工逐个改文档。
 
 在所有产物补齐后运行：
 
@@ -183,3 +187,4 @@ candidateFacts 中每一项至少应包含：
 2. canonical docs 的改动保持少而准，并由 Docs Reconciler 做 target-scoped 更新。
 3. 讨论稿和方案稿继续作为上游设计输入保留，不直接被脚本改写。
 4. generated run knowledge 仍保留完整运行摘要，而 canonical docs 只吸收稳定事实。
+5. 如果后续需要为组件、测试、工具等目录拆出新的知识分支，应先把目标文档本身设计出来，再交给 Docs Reconciler 做增量维护。

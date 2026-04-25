@@ -261,7 +261,7 @@ function renderCanonicalKnowledgeEntry(candidateFact, workflowId) {
   return `- ${candidateFact.fact}\n  - workflow: ${workflowId}\n  - freshness: ${candidateFact.freshness}\n  - rationale: ${candidateFact.rationale}\n  - supportingArtifacts:\n${supportingArtifacts}`
 }
 
-function upsertCanonicalKnowledgeEntry(content, config, candidateFact, workflowId) {
+export function upsertCanonicalKnowledgeEntry(content, config, candidateFact, workflowId) {
   const { content: sectionReadyContent, startMarker, endMarker } = ensureManagedKnowledgeSection(
     content,
     config,
@@ -274,10 +274,28 @@ function upsertCanonicalKnowledgeEntry(content, config, candidateFact, workflowI
   }
 
   const entry = renderCanonicalKnowledgeEntry(candidateFact, workflowId)
-  const replacement = `${startMarker}\n${entry}\n${endMarker}`
+  const emptySection = `${startMarker}\n${endMarker}`
+
+  if (sectionReadyContent.includes(emptySection)) {
+    const replacement = `${startMarker}\n${entry}\n${endMarker}`
+
+    return {
+      content: sectionReadyContent.replace(emptySection, replacement),
+      status: 'applied',
+    }
+  }
+
+  const endMarkerIndex = sectionReadyContent.indexOf(endMarker)
+
+  if (endMarkerIndex === -1) {
+    return { content: sectionReadyContent, status: 'already_present' }
+  }
+
+  const beforeEndMarker = sectionReadyContent.slice(0, endMarkerIndex).trimEnd()
+  const afterEndMarker = sectionReadyContent.slice(endMarkerIndex)
 
   return {
-    content: sectionReadyContent.replace(`${startMarker}\n${endMarker}`, replacement),
+    content: `${beforeEndMarker}\n${entry}\n${afterEndMarker}`,
     status: 'applied',
   }
 }
@@ -308,8 +326,10 @@ export async function createWorkflowScaffold({ slug, goal }) {
     planningSkill: '.github/skills/plan-writer/SKILL.md',
     codingGuide: 'docs/process/TDD_CODING_WORKFLOW.zh-CN.md',
     reviewGuide: 'docs/process/CODE_REVIEW_WORKFLOW.zh-CN.md',
+    docsReconcilerGuide: 'docs/process/DOCS_RECONCILE_WORKFLOW.zh-CN.md',
     codingSkill: '.github/skills/tdd-coding-writer/SKILL.md',
     reviewSkill: '.github/skills/code-review-writer/SKILL.md',
+    docsReconcilerSkill: '.github/skills/docs-reconciler/SKILL.md',
     testReviewerAgent: '.github/agents/test-case-reviewer.agent.md',
     codeReviewerAgent: '.github/agents/code-reviewer.agent.md',
     sourceDesignDocs,

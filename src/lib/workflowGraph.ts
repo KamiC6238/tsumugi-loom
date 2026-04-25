@@ -87,7 +87,7 @@ const baseWorkflowStages: readonly WorkflowStage[] = [
     id: 'docs-reconciler',
     order: 5,
     title: 'Docs Reconciler',
-    skill: 'Docs Reconciler',
+    skill: 'docs-reconciler',
     reviewer: null,
     goal: 'Generate run knowledge and apply minimal knowledge-base updates from verified facts.',
     entryCriteria:

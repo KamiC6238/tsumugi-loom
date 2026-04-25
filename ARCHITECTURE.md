@@ -89,4 +89,12 @@
     - artifacts/workflows/20260424-181535-scaffold-smoke-test/plan.md
     - artifacts/workflows/20260424-181535-scaffold-smoke-test/code-change.md
     - artifacts/workflows/20260424-181535-scaffold-smoke-test/final-summary.md
+- 当前前端实现以固定五节点 DAG 模型驱动 Vue Flow 画布，并把 review artifact 解析结果接入阶段详情。
+  - workflow: 20260425-095256-vue-flow-mvp-five-node-dag-spike
+  - freshness: verified-2026-04-25
+  - rationale: workflowGraph.ts 集中定义 Plan、Coding、Test、Review 和 Docs Reconciler 五个阶段及 handoff，App.vue 直接用该模型和 review.md 渲染只读流程画布与详情。
+  - supportingArtifacts:
+    - artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/code-change.md
+    - artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/test-report.md
+    - artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/final-summary.md
 <!-- END AUTO-KB:ARCHITECTURE -->
