@@ -60,26 +60,3 @@
 3. 跨节点 artifact 通信。
 4. 运行时 knowledge retrieval。
 
-## 5. 文档边界
-
-以下两份文档是产品和系统设计输入，不是当前实现的事实来源：
-
-1. TSUMUGI_LOOM_DISCUSSION_SUMMARY.zh-CN.md
-2. TSUMUGI_LOOM_KNOWLEDGE_BASE_PROPOSAL.zh-CN.md
-
-当前仓库的 canonical implementation facts 以本文件和 docs 下的文档为准；只有已经在代码或流程里落地的内容才应进入这里。
-
-## 6. 稳定约束
-
-当前开发流程采用 artifact-first 和 knowledge-base-first 的轻量协议：
-
-1. 每个开发回合先创建 workflow 目录。
-2. 实现、测试、review 和知识写回线索都落到显式 artifacts。
-3. Docs Reconciler 会先生成 run knowledge，再按 knowledge delta 对 canonical docs 做受控写回。
-4. ARCHITECTURE 只记录稳定结构和已验证约束，不写单次临时实现细节。
-
-## 7. Workflow-verified Facts
-
-<!-- BEGIN AUTO-KB:ARCHITECTURE -->
-- 当前仓库的 canonical docs 已拆分为 ARCHITECTURE、CONVENTIONS、DOMAIN、decisions 和 generated run knowledge。
-<!-- END AUTO-KB:ARCHITECTURE -->

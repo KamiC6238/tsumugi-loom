@@ -45,9 +45,8 @@ manifest.json 使用最小元数据结构：
 
 其中：
 
-1. plan.md 必须遵守 `docs/process/PLAN_ARTIFACT_SCHEMA.zh-CN.md`。
-2. manifest.json 只记录 workflow 身份、阶段进度和状态。
-3. 每个阶段完成后都要更新 manifest.json。
+1. manifest.json 只记录 workflow 身份、阶段进度和状态。
+2. 每个阶段完成后都要更新 manifest.json。
 
 推荐入口：
 

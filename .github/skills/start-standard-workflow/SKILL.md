@@ -110,5 +110,3 @@ user-invocable: true
 1. `.github/skills/plan-writer/SKILL.md`
 2. `.github/skills/tdd-coding-writer/SKILL.md`
 3. `.github/skills/code-review-writer/SKILL.md`
-4. `docs/process/WORKFLOW_AUTOMATION.zh-CN.md`
-5. `artifacts/workflows/README.md`

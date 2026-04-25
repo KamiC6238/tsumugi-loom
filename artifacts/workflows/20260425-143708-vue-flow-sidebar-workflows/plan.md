@@ -68,10 +68,6 @@ Goal: 基于 vue-flow 构建左右布局 workflow 页面，支持 sidebar 常驻
 ## Relevant Knowledge Base Slices
 
 - [x] ARCHITECTURE.md
-- [ ] docs/CONVENTIONS.md
-- [ ] docs/DOMAIN.md
-- [ ] TSUMUGI_LOOM_DISCUSSION_SUMMARY.zh-CN.md
-- [ ] TSUMUGI_LOOM_KNOWLEDGE_BASE_PROPOSAL.zh-CN.md
 
 ## Handoff Notes for Coding
 

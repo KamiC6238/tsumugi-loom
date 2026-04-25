@@ -61,14 +61,6 @@ TODO: 明确本次回合真正要解决的问题。
 1. TODO:
 2. TODO:
 
-## Relevant Knowledge Base Slices
-
-- [ ] ARCHITECTURE.md
-- [ ] docs/CONVENTIONS.md
-- [ ] docs/DOMAIN.md
-- [ ] TSUMUGI_LOOM_DISCUSSION_SUMMARY.zh-CN.md
-- [ ] TSUMUGI_LOOM_KNOWLEDGE_BASE_PROPOSAL.zh-CN.md
-
 ## Handoff Notes for Coding
 
 TODO: 给 Coding 阶段明确交接边界和优先顺序；若涉及 UI，必须明确哪些地方优先复用 `shadcn-vue`，哪些地方在确认无法复用后才允许自定义实现。

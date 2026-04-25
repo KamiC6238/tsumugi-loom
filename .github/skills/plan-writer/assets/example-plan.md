@@ -63,10 +63,6 @@ Goal: 搭建首页说明页并梳理 Tsumugi Loom 的核心信息结构
 ## Relevant Knowledge Base Slices
 
 - [x] ARCHITECTURE.md
-- [x] docs/CONVENTIONS.md
-- [x] docs/DOMAIN.md
-- [x] TSUMUGI_LOOM_DISCUSSION_SUMMARY.zh-CN.md
-- [x] TSUMUGI_LOOM_KNOWLEDGE_BASE_PROPOSAL.zh-CN.md
 
 ## Handoff Notes for Coding
 
