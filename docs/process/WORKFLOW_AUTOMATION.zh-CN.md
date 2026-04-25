@@ -22,6 +22,8 @@ Docs Reconciler 阶段默认通过 workspace skill `.github/skills/docs-reconcil
 
 这里的关键边界是：TDD 属于 Coding 阶段内部的执行纪律，而不是一个单独的“先写测试”平行阶段。Test 阶段负责完整测试运行、回归验证和跨 step 检查，不负责生成测试用例。
 
+如果希望从一段原始用户需求直接启动这条标准路径，可使用 workspace skill `.github/skills/start-standard-workflow/SKILL.md`。它的入口约定是 `/start-standard-workflow {用户需求描述}`，会先创建新的 workflow scaffold，再按 `plan -> tdd-coding -> testing -> review` 的顺序推进。
+
 ## 2. 命令入口
 
 当前提供三条命令：
