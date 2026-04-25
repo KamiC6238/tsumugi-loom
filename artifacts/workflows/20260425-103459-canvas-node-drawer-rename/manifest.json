@@ -1,0 +1,15 @@
+{
+  "workflowId": "20260425-103459-canvas-node-drawer-rename",
+  "slug": "canvas-node-drawer-rename",
+  "goal": "让 flow 画布里的节点都可点击，并在右侧 drawer 中修改节点名称。",
+  "createdAt": "2026-04-25T10:34:59.000Z",
+  "updatedAt": "2026-04-25T11:15:44.000Z",
+  "currentStage": "review",
+  "completedStages": [
+    "plan",
+    "coding",
+    "testing",
+    "review"
+  ],
+  "status": "completed"
+}

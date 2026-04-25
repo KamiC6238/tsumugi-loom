@@ -4,6 +4,7 @@ import {
   appendWorkflow,
   createEmptyWorkflowState,
   getActiveWorkflow,
+  renameWorkflowNode,
   selectWorkflow,
 } from '../../src/lib/workflows'
 
@@ -83,5 +84,53 @@ describe('workflow state', () => {
     expect(state.workflows).toHaveLength(1)
     expect(state.activeWorkflowId).toBe(existingState.activeWorkflowId)
     expect(getActiveWorkflow(state)?.name).toBe('Order Intake')
+  })
+
+  it('renames only the targeted node label within the selected workflow', () => {
+    const firstPass = appendWorkflow(createEmptyWorkflowState(), 'Order Intake')
+    const secondPass = appendWorkflow(firstPass, 'Approval Loop')
+    const targetWorkflowId = firstPass.activeWorkflowId as string
+    const targetWorkflow = secondPass.workflows.find((workflow) => workflow.id === targetWorkflowId)
+    const targetNodeId = targetWorkflow?.nodes[1]?.id as string
+
+    const renamed = renameWorkflowNode(
+      secondPass,
+      targetWorkflowId,
+      targetNodeId,
+      '  Manual review  ',
+    )
+
+    const renamedWorkflow = renamed.workflows.find((workflow) => workflow.id === targetWorkflowId)
+    const untouchedWorkflow = renamed.workflows.find((workflow) => workflow.name === 'Approval Loop')
+    const renamedLabels = renamedWorkflow?.nodes.map((node) => String(node.data?.label ?? ''))
+    const untouchedLabels = untouchedWorkflow?.nodes.map((node) => String(node.data?.label ?? ''))
+
+    expect(renamed).not.toBe(secondPass)
+    expect(renamed.activeWorkflowId).toBe(secondPass.activeWorkflowId)
+    expect(renamedWorkflow?.nodes[1]?.data).toMatchObject({
+      label: 'Manual review',
+    })
+    expect(renamedLabels).toContain('Order Intake brief')
+    expect(renamedLabels).toContain('Manual review')
+    expect(renamedLabels).toContain('Order Intake release')
+    expect(untouchedLabels).toContain('Approval Loop brief')
+    expect(untouchedLabels).toContain('Approval Loop review')
+    expect(untouchedLabels).toContain('Approval Loop release')
+  })
+
+  it('ignores blank node names when renaming a node', () => {
+    const state = appendWorkflow(createEmptyWorkflowState(), 'Order Intake')
+    const workflow = getActiveWorkflow(state)
+    const targetNodeId = workflow?.nodes[0]?.id as string
+
+    expect(renameWorkflowNode(state, workflow?.id as string, targetNodeId, '   ')).toBe(state)
+  })
+
+  it('ignores rename requests for unknown workflows or node ids', () => {
+    const state = appendWorkflow(createEmptyWorkflowState(), 'Order Intake')
+    const workflow = getActiveWorkflow(state)
+
+    expect(renameWorkflowNode(state, 'missing-workflow', 'node-1', 'Renamed')).toBe(state)
+    expect(renameWorkflowNode(state, workflow?.id as string, 'missing-node', 'Renamed')).toBe(state)
   })
 })

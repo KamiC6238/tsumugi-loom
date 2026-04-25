@@ -2,12 +2,25 @@
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { VueFlow } from '@vue-flow/core'
+import type { NodeMouseEvent } from '@vue-flow/core'
 
 import type { WorkflowRecord } from '@/lib/workflows'
 
-defineProps<{
+const props = defineProps<{
   activeWorkflow: WorkflowRecord | null
 }>()
+
+const emit = defineEmits<{
+  nodeClick: [nodeId: string]
+}>()
+
+function handleNodeClick({ node }: NodeMouseEvent) {
+  if (!props.activeWorkflow) {
+    return
+  }
+
+  emit('nodeClick', node.id)
+}
 </script>
 
 <template>
@@ -39,6 +52,7 @@ defineProps<{
           :nodes="activeWorkflow.nodes"
           :edges="activeWorkflow.edges"
           :default-viewport="{ zoom: 1 }"
+          @node-click="handleNodeClick"
           fit-view-on-init
         >
           <Background :gap="20" />

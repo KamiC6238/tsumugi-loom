@@ -52,6 +52,61 @@ export function selectWorkflow(state: WorkflowState, workflowId: string): Workfl
   }
 }
 
+export function renameWorkflowNode(
+  state: WorkflowState,
+  workflowId: string,
+  nodeId: string,
+  rawLabel: string,
+): WorkflowState {
+  const label = rawLabel.trim()
+
+  if (!label) {
+    return state
+  }
+
+  const workflowIndex = state.workflows.findIndex((workflow) => workflow.id === workflowId)
+
+  if (workflowIndex < 0) {
+    return state
+  }
+
+  const workflow = state.workflows[workflowIndex]
+  const nodeIndex = workflow.nodes.findIndex((node) => node.id === nodeId)
+
+  if (nodeIndex < 0) {
+    return state
+  }
+
+  const currentNode = workflow.nodes[nodeIndex]
+  const currentLabel = String(currentNode.data?.label ?? '')
+
+  if (currentLabel === label) {
+    return state
+  }
+
+  const nextNodes = [...workflow.nodes]
+
+  nextNodes[nodeIndex] = {
+    ...currentNode,
+    data: {
+      ...currentNode.data,
+      label,
+    },
+  }
+
+  const nextWorkflows = [...state.workflows]
+
+  nextWorkflows[workflowIndex] = {
+    ...workflow,
+    nodes: nextNodes,
+  }
+
+  return {
+    ...state,
+    workflows: nextWorkflows,
+  }
+}
+
 export function getActiveWorkflow(state: WorkflowState): WorkflowRecord | null {
   return state.workflows.find((workflow) => workflow.id === state.activeWorkflowId) ?? null
 }

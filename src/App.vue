@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CreateWorkflowDialog from '@/components/workflow-studio/CreateWorkflowDialog.vue'
 import WorkflowCanvasPanel from '@/components/workflow-studio/WorkflowCanvasPanel.vue'
+import WorkflowNodeDrawer from '@/components/workflow-studio/WorkflowNodeDrawer.vue'
 import WorkflowSidebar from '@/components/workflow-studio/WorkflowSidebar.vue'
 import { useWorkflowStudio } from '@/composables/useWorkflowStudio'
 
@@ -8,10 +9,15 @@ const {
   workflows,
   activeWorkflowId,
   activeWorkflow,
+  selectedNode,
   isCreateDialogOpen,
+  isNodeDrawerOpen,
   openCreateDialog,
   createWorkflow,
   activateWorkflow,
+  openNodeDrawer,
+  setNodeDrawerOpen,
+  renameSelectedNode,
 } = useWorkflowStudio()
 </script>
 
@@ -23,7 +29,13 @@ const {
       @create="openCreateDialog"
       @select="activateWorkflow"
     />
-    <WorkflowCanvasPanel :active-workflow="activeWorkflow" />
+    <WorkflowCanvasPanel :active-workflow="activeWorkflow" @node-click="openNodeDrawer" />
+    <WorkflowNodeDrawer
+      :open="isNodeDrawerOpen"
+      :node="selectedNode"
+      @update:open="setNodeDrawerOpen"
+      @save="renameSelectedNode"
+    />
     <CreateWorkflowDialog v-model:open="isCreateDialogOpen" @create="createWorkflow" />
   </div>
 </template>
