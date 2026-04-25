@@ -79,7 +79,22 @@ describe('validateWorkflow', () => {
     expect(result.issues).toEqual([])
   })
 
-  it('rejects ready workflows whose test review is not approved', async () => {
+  it('accepts bundles that do not include the optional knowledge delta artifact', async () => {
+    const { workflowId, workflowPath } = await cloneWorkflowFixture()
+
+    try {
+      await fs.rm(path.join(workflowPath, 'knowledge-delta.json'))
+
+      const result = await validateWorkflow(workflowId)
+
+      expect(result.issues).toEqual([])
+      expect(result.knowledgeDelta).toBeNull()
+    } finally {
+      await fs.rm(workflowPath, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts non-approved test review states during in-progress validation', async () => {
     const { workflowId, workflowPath } = await cloneWorkflowFixture()
 
     try {
@@ -93,9 +108,7 @@ describe('validateWorkflow', () => {
 
       const result = await validateWorkflow(workflowId)
 
-      expect(result.issues).toContain(
-        'test-review.md 的 Review Status 必须为 approved，workflow 才能结束 Coding',
-      )
+      expect(result.issues).toEqual([])
     } finally {
       await fs.rm(workflowPath, { recursive: true, force: true })
     }
@@ -120,15 +133,13 @@ describe('validateWorkflow', () => {
       const result = await validateWorkflow(workflowId)
 
       expect(result.issues).toEqual([])
-      expect(result.warnings).toContain(
-        'review.md 在第 3 轮后带着已知问题继续进入 reconcile；请在界面中展示 Required Rework 并允许人工介入',
-      )
+      expect(result.warnings).toEqual([])
     } finally {
       await fs.rm(workflowPath, { recursive: true, force: true })
     }
   })
 
-  it('rejects review handoffs that try to proceed before the third round', async () => {
+  it('accepts intermediate review states during in-progress validation', async () => {
     const { workflowId, workflowPath } = await cloneWorkflowFixture()
 
     try {
@@ -147,12 +158,7 @@ describe('validateWorkflow', () => {
 
       const result = await validateWorkflow(workflowId)
 
-      expect(result.issues).toContain(
-        'review.md 在前 2 轮为 changes_requested 时，Review Disposition 必须为 rework_required',
-      )
-      expect(result.issues).toContain(
-        'review.md 只有在 approved，或第 3 轮 changes_requested 且 Review Disposition = proceed_with_known_issues 时，workflow 才能进入 reconcile',
-      )
+      expect(result.issues).toEqual([])
     } finally {
       await fs.rm(workflowPath, { recursive: true, force: true })
     }
@@ -195,7 +201,7 @@ describe('validateWorkflow', () => {
       const result = await validateWorkflow(workflowId)
 
       expect(result.issues).toContain(
-        'knowledge-delta.json 中的 sourceNodeIds 必须为: plan, coding, test, review, docs-reconciler',
+        'knowledge-delta.json 中的 sourceNodeIds 必须为: plan, coding, test, review',
       )
     } finally {
       await fs.rm(workflowPath, { recursive: true, force: true })

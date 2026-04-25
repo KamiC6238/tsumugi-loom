@@ -27,7 +27,7 @@ playwright
 
 ### REFACTOR
 
-把页面信息块拆成更清晰的结构，并确认 Playwright 断言仍然基于用户可见行为而不是 DOM 实现细节。
+把页面信息块拆成更清晰的结构，并让 Playwright 断言持续聚焦用户可见行为。
 
 ### Status
 

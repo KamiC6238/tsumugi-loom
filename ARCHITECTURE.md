@@ -74,7 +74,7 @@
 当前开发流程采用 artifact-first 和 knowledge-base-first 的轻量协议：
 
 1. 每个开发回合先创建 workflow 目录。
-2. 实现、测试、review 和总结都落到显式 artifacts。
+2. 实现、测试、review 和知识写回线索都落到显式 artifacts。
 3. Docs Reconciler 会先生成 run knowledge，再按 knowledge delta 对 canonical docs 做受控写回。
 4. ARCHITECTURE 只记录稳定结构和已验证约束，不写单次临时实现细节。
 
@@ -82,19 +82,4 @@
 
 <!-- BEGIN AUTO-KB:ARCHITECTURE -->
 - 当前仓库的 canonical docs 已拆分为 ARCHITECTURE、CONVENTIONS、DOMAIN、decisions 和 generated run knowledge。
-  - workflow: 20260424-181535-scaffold-smoke-test
-  - freshness: verified-2026-04-24
-  - rationale: knowledge base 文档骨架和 generated run knowledge 目录已在仓库中落地。
-  - supportingArtifacts:
-    - artifacts/workflows/20260424-181535-scaffold-smoke-test/plan.md
-    - artifacts/workflows/20260424-181535-scaffold-smoke-test/code-change.md
-    - artifacts/workflows/20260424-181535-scaffold-smoke-test/final-summary.md
-- 当前前端实现以固定五节点 DAG 模型驱动 Vue Flow 画布，并把 review artifact 解析结果接入阶段详情。
-  - workflow: 20260425-095256-vue-flow-mvp-five-node-dag-spike
-  - freshness: verified-2026-04-25
-  - rationale: workflowGraph.ts 集中定义 Plan、Coding、Test、Review 和 Docs Reconciler 五个阶段及 handoff，App.vue 直接用该模型和 review.md 渲染只读流程画布与详情。
-  - supportingArtifacts:
-    - artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/code-change.md
-    - artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/test-report.md
-    - artifacts/workflows/20260425-095256-vue-flow-mvp-five-node-dag-spike/final-summary.md
 <!-- END AUTO-KB:ARCHITECTURE -->

@@ -38,7 +38,6 @@ const stageLayout: Record<WorkflowStageId, { x: number; y: number }> = {
   coding: { x: 350, y: 35 },
   test: { x: 680, y: 150 },
   review: { x: 990, y: 55 },
-  'docs-reconciler': { x: 1300, y: 175 },
 }
 
 const selectedStageId = ref<WorkflowStageId>(workflowSummary.activeStageId ?? workflowStages[0].id)
@@ -117,9 +116,7 @@ const readinessRatio = computed(
   () => `${workflowSummary.completedStages + workflowSummary.runningStages}/${workflowSummary.totalStages}`,
 )
 
-const reviewContextVisible = computed(
-  () => selectedStage.value.id === 'review' || selectedStage.value.id === 'docs-reconciler',
-)
+const reviewContextVisible = computed(() => selectedStage.value.id === 'review')
 
 const reviewDispositionLabel = computed(() => {
   switch (reviewArtifact.disposition) {
@@ -136,14 +133,14 @@ const reviewDispositionLabel = computed(() => {
 
 const reviewHandoffSummary = computed(() => {
   if (reviewArtifact.status === 'approved') {
-    return `Latest review reached approved in round ${reviewArtifact.round ?? 'n/a'}.`
+    return `Latest review reached approved in round ${reviewArtifact.round ?? 'n/a'}, so the standard workflow can close here.`
   }
 
-  if (reviewArtifact.canProceedToDocs) {
-    return `Round ${reviewArtifact.round ?? 'n/a'} ended with changes requested, so the workflow proceeds and leaves the listed follow-up items to a human.`
+  if (reviewArtifact.hasFinalConclusion) {
+    return `Round ${reviewArtifact.round ?? 'n/a'} ended with known follow-up items, so the review concludes and leaves the listed items to a human.`
   }
 
-  return 'The current review artifact still needs another implementation round before docs reconcile.'
+  return 'The current review artifact is still in progress and will continue with another implementation round.'
 })
 
 function selectStage(stageId: WorkflowStageId) {
@@ -177,18 +174,17 @@ function minimapNodeColor(node: Node<WorkflowStage>) {
     <section class="hero-panel">
       <div class="hero-panel__copy">
         <p class="eyebrow">Tsumugi Loom MVP Spike</p>
-        <h1>Five nodes, one strict DAG, and every gate kept explicit.</h1>
+        <h1>Four stages, one workflow directory, and every handoff kept explicit.</h1>
         <p class="hero-panel__lede">
-          This canvas turns the current local workflow into a runnable visual contract: Plan creates
-          handoff artifacts, Coding owns the TDD loop, Test runs the full suite, Review caps the
-          autonomous loop at three rounds, and Docs Reconciler can keep moving while humans see any
-          leftover review issues.
+          This canvas turns the current standard workflow into a visual contract: Plan creates the
+          handoff plan, TDD Coding owns the implementation loop, Testing runs every automated case,
+          and Code Review captures the final review conclusion with any remaining human follow-up.
         </p>
 
         <div class="hero-panel__tags">
           <span>artifact-first</span>
+          <span>workflow-dir</span>
           <span>human-in-the-loop</span>
-          <span>knowledge-base-first</span>
           <span>Vue Flow spike</span>
         </div>
       </div>
@@ -219,11 +215,11 @@ function minimapNodeColor(node: Node<WorkflowStage>) {
         <div class="section-heading">
           <div>
             <p class="eyebrow">Graph Canvas</p>
-            <h2>Execution order stays linear while runtime state can still block or gate.</h2>
+            <h2>Execution order stays linear while every stage keeps updating the same workflow.</h2>
           </div>
           <p class="section-heading__hint">
-            Click a node to inspect the stage contract, required artifacts, and the action that would
-            run next.
+            Click a node to inspect the stage contract, the artifacts it may produce, and the action
+            that runs in that stage.
           </p>
         </div>
 

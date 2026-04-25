@@ -11,36 +11,29 @@ import {
 } from '../../src/lib/workflowGraph'
 
 describe('workflowGraph', () => {
-  it('keeps the MVP DAG in a stable five-stage order', () => {
+  it('keeps the MVP DAG in a stable four-stage order', () => {
     const stages = getWorkflowStages()
 
-    expect(stages.map((stage) => stage.id)).toEqual([
-      'plan',
-      'coding',
-      'test',
-      'review',
-      'docs-reconciler',
-    ])
+    expect(stages.map((stage) => stage.id)).toEqual(['plan', 'coding', 'test', 'review'])
 
-    expect(stages.map((stage) => stage.order)).toEqual([1, 2, 3, 4, 5])
+    expect(stages.map((stage) => stage.order)).toEqual([1, 2, 3, 4])
 
     expect(workflowConnections).toEqual([
-      { source: 'plan', target: 'coding', handoff: 'ready PlanArtifact' },
-      { source: 'coding', target: 'test', handoff: 'code + tests' },
+      { source: 'plan', target: 'coding', handoff: 'plan.md handoff' },
+      { source: 'coding', target: 'test', handoff: 'coding artifacts' },
       { source: 'test', target: 'review', handoff: 'test-report.md' },
-      { source: 'review', target: 'docs-reconciler', handoff: 'review.md handoff' },
     ])
   })
 
   it('summarizes the current spike state for dashboard rendering', () => {
     expect(summarizeWorkflow()).toEqual({
-      totalStages: 5,
+      totalStages: 4,
       completedStages: 1,
       runningStages: 1,
-      queuedStages: 2,
+      queuedStages: 1,
       blockedStages: 1,
       activeStageId: 'coding',
-      outputArtifacts: 13,
+      outputArtifacts: 6,
     })
   })
 
@@ -95,19 +88,13 @@ describe('workflowGraph', () => {
     })
   })
 
-  it('keeps gate metadata attached to review and docs reconciler stages', () => {
+  it('keeps gate metadata attached to the review stage', () => {
     expect(getStageById('review')).toMatchObject({
       reviewer: 'Code Reviewer',
       skill: 'code-review-writer',
-      actionLabel: 'Capture capped review verdict',
-      status: 'queued',
-    })
-
-    expect(getStageById('docs-reconciler')).toMatchObject({
-      reviewer: null,
-      skill: 'docs-reconciler',
+      actionLabel: 'Capture review verdict',
       status: 'blocked',
-      entryCriteria: expect.stringContaining('review.md is approved or after round 3'),
+      title: 'Code Review',
     })
 
     expect(workflowStageStatusLabels).toEqual({
@@ -128,12 +115,12 @@ describe('workflowGraph', () => {
 
     expect(getWorkflowStages()[0]).toMatchObject({
       title: 'Plan',
-      outputs: ['plan.md', 'plan.json', 'clarification.md'],
+      outputs: ['plan.md'],
     })
 
     expect(getStageById('plan')).toMatchObject({
       title: 'Plan',
-      outputs: ['plan.md', 'plan.json', 'clarification.md'],
+      outputs: ['plan.md'],
     })
   })
 
@@ -147,13 +134,13 @@ describe('workflowGraph', () => {
     expect(summary.activeStageId).toBe('coding')
     expect(getStageById(summary.activeStageId as WorkflowStageId)).toMatchObject({
       id: 'coding',
-      title: 'Coding',
+      title: 'TDD Coding',
       status: 'running',
     })
 
     expect(getStageById('test')).toMatchObject({
       id: 'test',
-      title: 'Test',
+      title: 'Testing',
       status: 'queued',
       outputs: ['test-report.md'],
     })

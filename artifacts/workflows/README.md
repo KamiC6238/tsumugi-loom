@@ -14,46 +14,47 @@
 
 1. manifest.json
 2. plan.md
-3. plan.json
-4. clarification.md
- 5. tdd-cycle.md
- 6. test-review.md
- 7. code-change.md
- 8. test-report.md
- 9. review.md
- 10. final-summary.md
- 11. knowledge-delta.json
+
+标准 workflow 固定为四个阶段：
+
+1. Plan
+2. TDD Coding
+3. Testing
+4. Review
+
+后续阶段按固定顺序补充文件：
+
+1. Coding 阶段：tdd-cycle.md、test-review.md、code-change.md
+2. Testing 阶段：test-report.md
+3. Review 阶段：review.md
+
+manifest.json 使用最小元数据结构：
+
+```json
+{
+  "workflowId": "20260425-103000-example-flow",
+  "slug": "example-flow",
+  "goal": "为页面增加明确的节点选中态",
+  "createdAt": "2026-04-25T10:30:00.000Z",
+  "updatedAt": "2026-04-25T10:30:00.000Z",
+  "currentStage": "plan",
+  "completedStages": [],
+  "status": "active"
+}
+```
 
 其中：
 
 1. plan.md 必须遵守 `docs/process/PLAN_ARTIFACT_SCHEMA.zh-CN.md`。
-2. plan.json 必须遵守 `docs/process/plan-artifact.schema.json`。
-3. clarification.md 用于承接 `needs_clarification` 状态或记录本次无需澄清。
+2. manifest.json 只记录 workflow 身份、阶段进度和状态。
+3. 每个阶段完成后都要更新 manifest.json。
 
-建议通过 `.github/skills/plan-writer/SKILL.md` 一次性生成这三份计划相关 artifact，而不是由 coding 阶段临时补写。
+推荐入口：
 
-其中 tdd-cycle.md 和 test-review.md 会由 scaffold 预创建模板，但只有当 plan 已经 ready 时，它们才会成为 validate 的硬门禁。
+1. 通过 `.github/skills/start-standard-workflow/SKILL.md` 创建新的 workflow 目录。
+2. 通过 `.github/skills/plan-writer/SKILL.md` 生成和维护 plan.md。
+3. 通过 `.github/skills/tdd-coding-writer/SKILL.md` 维护 Coding 产物。
+4. 在 Testing 阶段执行全部测试用例，并维护 test-report.md。
+5. 通过 `.github/skills/code-review-writer/SKILL.md` 完成 review.md。
 
-进入 Coding 后，需要持续更新：
-
-1. tdd-cycle.md
-	记录每个 plan step 的 RED、GREEN、REFACTOR 状态、测试工具和关键命令。
-2. test-review.md
-	记录测试 reviewer subagent 的结论、问题和回合。
-
-这两份文件由 `.github/skills/tdd-coding-writer/SKILL.md` 在实现过程中维护。
-
-进入 Review 后，需要持续更新：
-
-1. review.md
-	记录独立 code reviewer subagent 的结论、风险和返工项。
-
-这份文件由 `.github/skills/code-review-writer/SKILL.md` 在 Review 阶段维护；对于已经 ready 的 workflow，只有当它的 `Review Status = approved` 时，validate 才会放行到 reconcile。
-
-当运行 reconcile 后，还会补充：
-
-1. reconciliation.md
-
-并且 Docs Reconciler 会把 knowledge-delta.json 中适合长期保留的事实写回 canonical docs。
-
-这些文件是本仓库中“节点协作”的落地形式。
+这些文件是当前仓库标准 workflow 的唯一落地形式。

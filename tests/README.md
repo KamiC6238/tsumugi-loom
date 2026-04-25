@@ -11,4 +11,5 @@
 
 1. 逻辑代码优先写到 Vitest。
 2. UI 交互优先写到 Playwright。
-3. 每个 plan step 在 Coding 阶段都应经过 TDD。
+3. Coding 阶段按选择性 TDD 生成高价值测试或替代验证记录。
+4. Testing 阶段运行 `pnpm test:all`，覆盖当前仓库全部自动化测试。

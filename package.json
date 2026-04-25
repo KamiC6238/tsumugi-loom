@@ -10,11 +10,9 @@
     "test:logic": "vitest run",
     "test:logic:watch": "vitest",
     "test:ui": "playwright test",
+    "test:all": "pnpm test:logic && pnpm test:ui",
     "test:ui:headed": "playwright test --headed",
-    "test:ui:install": "playwright install",
-    "loom:workflow:start": "node scripts/loom/start-workflow.mjs",
-    "loom:workflow:validate": "node scripts/loom/validate-workflow.mjs",
-    "loom:workflow:reconcile": "node scripts/loom/reconcile-workflow.mjs"
+    "test:ui:install": "playwright install"
   },
   "dependencies": {
     "@vue-flow/background": "^1.3.2",

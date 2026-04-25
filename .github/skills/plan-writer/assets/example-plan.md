@@ -1,7 +1,6 @@
-# Plan Artifact
+# Plan
 
 Workflow ID: 20260424-000000-homepage-overview
-Plan Status: ready
 Goal: 搭建首页说明页并梳理 Tsumugi Loom 的核心信息结构
 
 ## Source User Request
@@ -27,7 +26,7 @@ Goal: 搭建首页说明页并梳理 Tsumugi Loom 的核心信息结构
 ## Constraints
 
 1. 必须保持当前 Vue/Vite 技术栈。
-2. 不应破坏已有 workflow automation 文档和目录约定。
+2. 保持已有 workflow automation 文档和目录约定。
 
 ## Assumptions
 
@@ -71,4 +70,4 @@ Goal: 搭建首页说明页并梳理 Tsumugi Loom 的核心信息结构
 
 ## Handoff Notes for Coding
 
-Coding 应优先解决信息结构和页面可读性，不要在本轮引入 runtime、状态管理或后端集成。
+Coding 应优先解决信息结构和页面可读性，并将本轮工作集中在展示层与必要文档。

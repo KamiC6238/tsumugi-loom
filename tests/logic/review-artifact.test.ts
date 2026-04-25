@@ -11,7 +11,7 @@ describe('parseReviewArtifact', () => {
       status: 'approved',
       round: 3,
       disposition: 'approved',
-      canProceedToDocs: true,
+      hasFinalConclusion: true,
       unresolvedFollowUps: [],
     })
     expect(summary.findings).toContain(
@@ -50,7 +50,7 @@ Review Disposition: proceed_with_known_issues
 
 自动 review 已达到第 3 轮，因此继续下一步并把问题交给人处理。`)
 
-    expect(summary.canProceedToDocs).toBe(true)
+    expect(summary.hasFinalConclusion).toBe(true)
     expect(summary.unresolvedFollowUps).toEqual([
       '在界面里显示 review findings 和 follow-up。',
       '让人可以接手处理遗留问题。',

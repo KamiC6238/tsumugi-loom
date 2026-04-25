@@ -1,192 +1,99 @@
 # Workflow Automation
 
-这份文档描述当前仓库如何把 Tsumugi Loom 的 artifact-first 和 knowledge-base-first 思路，落成一套可以直接用于日常开发的本地流程。
+这份文档描述当前仓库的轻量 workflow。标准路径固定为 Plan、Coding、Testing、Review。Docs Reconciler 作为可选的后续知识写回步骤单独执行。
 
-## 1. 目标
+## 1. 标准路径
 
-当前实现不做 UI 节点编排，而是把节点思想映射成固定开发阶段：
+当前标准 workflow 采用四个阶段：
 
 1. Plan
 2. Coding
-3. Test
+3. Testing
 4. Review
-5. Docs Reconciler
 
-其中 Plan 阶段不直接把用户原始聊天内容交给 Coding，而是先通过 workspace skill `.github/skills/plan-writer/SKILL.md` 转成符合 `docs/process/PLAN_ARTIFACT_SCHEMA.zh-CN.md` 的结构化 PlanArtifact。
+各阶段的默认 skill：
 
-Coding 阶段默认通过 workspace skill `.github/skills/tdd-coding-writer/SKILL.md` 执行。这个 skill 会按 `docs/process/TDD_CODING_WORKFLOW.zh-CN.md` 对 plan 的每个 step 执行 RED-GREEN-REFACTOR，并在测试生成后调用 `.github/agents/test-case-reviewer.agent.md` 进行 reviewer gate。
+1. Plan 由 `.github/skills/plan-writer/SKILL.md` 驱动，并产出结构化 `plan.md`。
+2. Coding 由 `.github/skills/tdd-coding-writer/SKILL.md` 驱动，按 step 选择产品级测试或替代验证路径。
+3. Testing 负责运行完整验证，并把结果写入 `test-report.md`。
+4. Review 由 `.github/skills/code-review-writer/SKILL.md` 驱动，输出结构化 `review.md`。
 
-Review 阶段默认通过 workspace skill `.github/skills/code-review-writer/SKILL.md` 执行。这个 skill 会按 `docs/process/CODE_REVIEW_WORKFLOW.zh-CN.md` 调用 `.github/agents/code-reviewer.agent.md` 做独立 code review，并把结论写回 `review.md`。
-
-Docs Reconciler 阶段默认通过 workspace skill `.github/skills/docs-reconciler/SKILL.md` 执行。这个 skill 会按 `docs/process/DOCS_RECONCILE_WORKFLOW.zh-CN.md` 读取最新 workflow 的 artifacts、整理 knowledge delta，并调用 reconcile 脚本把稳定事实增量写回 canonical docs。
-
-这里的关键边界是：TDD 属于 Coding 阶段内部的执行纪律，而不是一个单独的“先写测试”平行阶段。Test 阶段负责完整测试运行、回归验证和跨 step 检查，不负责生成测试用例。
-
-如果希望从一段原始用户需求直接启动这条标准路径，可使用 workspace skill `.github/skills/start-standard-workflow/SKILL.md`。它的入口约定是 `/start-standard-workflow {用户需求描述}`，会先创建新的 workflow scaffold，再按 `plan -> tdd-coding -> testing -> review` 的顺序推进。
+Review 完成后，标准 workflow 即可结束。如需把稳定事实沉淀回知识库，再单独调用 `.github/skills/docs-reconciler/SKILL.md`。
 
 ## 2. 命令入口
 
-当前提供三条命令：
+当前提供三条 workflow 命令：
 
-1. pnpm loom:workflow:start -- <slug>
-   创建一次新的开发回合目录和基础 artifacts。
-2. pnpm loom:workflow:validate -- <workflow-id>
-   检查这个 workflow 是否补全了必需产物，knowledge delta 是否结构有效。
-3. pnpm loom:workflow:reconcile -- <workflow-id>
-   基于已完成的 artifacts 生成 run knowledge、reconciliation 报告，并把稳定事实写回 canonical docs。
+1. `pnpm loom:workflow:start -- <slug>`
+   创建新的 workflow 目录，并生成 `manifest.json` 与 `plan.md`。
+2. `pnpm loom:workflow:validate -- <workflow-id>`
+   校验 `manifest.json`、`plan.md` 和当前 workflow 中已经存在的结构化产物。
+3. `pnpm loom:workflow:reconcile -- <workflow-id>`
+   读取 `knowledge-delta.json`、review 结论和相关实现证据，生成 run knowledge 与 reconciliation 报告，并更新 canonical docs。
 
 测试相关命令：
 
-1. pnpm test:logic
-   运行 Vitest，用于逻辑代码测试。
-2. pnpm test:ui
-   运行 Playwright，用于 UI 交互测试。
-3. pnpm test:ui:install
-   首次安装 Playwright 浏览器。
+1. `pnpm test:logic`
+2. `pnpm test:ui`
+3. `pnpm test:ui:install`
 
-## 3. 推荐使用方式
+## 3. 阶段契约
 
-### 3.1 启动一次开发回合
+### 3.1 Plan
 
-示例：
+Plan 阶段把用户需求整理成 `plan.md`。完成后的 `plan.md` 应包含范围、约束、假设、Open Questions、Task Breakdown、Acceptance Criteria 和 Test Strategy。
 
-pnpm loom:workflow:start -- landing-page-shell --goal "搭建首页外壳和基础信息结构"
+### 3.2 Coding
 
-脚本会在 artifacts/workflows 下创建一个时间戳目录，并生成：
+Coding 阶段读取 `plan.md`，按 `Task Breakdown` 拆分 step，并在每个 step 上先做测试价值判断：
 
-1. plan.md
-2. plan.json
-3. clarification.md
- 4. tdd-cycle.md
- 5. test-review.md
- 6. code-change.md
- 7. test-report.md
- 8. review.md
- 9. final-summary.md
- 10. knowledge-delta.json
- 11. manifest.json
+1. 适合产品级测试的 step 进入 RED、GREEN、REFACTOR。
+2. 适合替代验证的 step 记录 skip rationale 与验证方式。
+3. Coding 阶段按需更新 `tdd-cycle.md`、`test-review.md`、`code-change.md` 和 `test-report.md`。
 
-### 3.2 执行实现
+### 3.3 Testing
 
-开发过程中按顺序填写这些文件：
+Testing 阶段运行完整验证，覆盖逻辑、UI、回归和集成检查，并将结果写入 `test-report.md`。
 
-1. 先使用 planning skill 生成并补齐 plan.md 与 plan.json。
-2. 如果信息不足，更新 clarification.md，并保持 `Plan Status: needs_clarification`。
-3. 信息充分后，将 plan 切换到 `ready`，clarification.md 标记为 `not_needed` 或 `resolved`。
-4. 代码实现后更新 code-change.md。
-5. 跑验证后写 test-report.md。
-6. 完成 review.md。
-7. 总结本次变更和结果到 final-summary.md。
-8. 把长期候选事实写入 knowledge-delta.json。
+### 3.4 Review
 
-plan.md 的结构以 `docs/process/PLAN_ARTIFACT_SCHEMA.zh-CN.md` 为准；plan.json 的结构以 `docs/process/plan-artifact.schema.json` 为准。不应把用户需求原文未经整理直接交给 coding 环节。
+Review 阶段调用独立 reviewer subagent 做 code review，并将结论写入 `review.md`。`review.md` 记录 `Review Round`、`Review Status` 和 `Review Disposition`，供后续阅读和可选的 docs reconcile 使用。
 
-进入 Coding 后，必须维护两份 coding-stage artifacts：
+### 3.5 Optional Docs Reconcile
 
-1. tdd-cycle.md
-   记录每个 plan step 的 RED、GREEN、REFACTOR 过程。
-2. test-review.md
-   记录 reviewer subagent 的测试审查结论和回合。
+如需继续沉淀知识库，可在 Review 结束后准备 `knowledge-delta.json`，再运行 reconcile 命令。Docs Reconciler 会读取 workflow 产物、生成 run knowledge，并把稳定事实增量写回 ARCHITECTURE、CONVENTIONS、DOMAIN 或 ADR。
 
-这两份文件由 `.github/skills/tdd-coding-writer/SKILL.md` 在 Coding 阶段更新；workflow scaffold 会先生成模板，等 plan 进入 `ready` 后它们就成为 validate 的硬门禁。
+## 4. Validate 范围
 
-从阶段职责上看：
+`pnpm loom:workflow:validate -- <workflow-id>` 当前执行以下检查：
 
-1. Coding
-   逐 step 执行 TDD，并产出测试与实现。
-2. Test
-   跑完整 Vitest、Playwright 和其他必要验证，检查跨 step 回归与集成结果。
-3. Review
-   通过独立 code reviewer subagent 做最终代码审查，并把结论固化到 `review.md`。
+1. `manifest.json` 和 `plan.md` 存在。
+2. `plan.md` 包含标准段落。
+3. 当前 workflow 中已经存在的 `test-review.md`、`review.md` 和 `knowledge-delta.json` 结构有效。
+4. 当前 workflow 中已经存在的 markdown 产物不保留 `TODO:` 占位。
 
-### 3.3 验证产物完整性
+这一步适合在开发中反复运行，用来确认当前产物结构可继续推进。
 
-在进入 docs reconcile 之前运行：
+## 5. Reconcile 输入
 
-pnpm loom:workflow:validate -- <workflow-id>
+`pnpm loom:workflow:reconcile -- <workflow-id>` 读取以下输入：
 
-如果模板中的 TODO 还没填完，或 knowledge delta 结构无效，这一步会失败。
+1. `code-change.md`
+2. `test-report.md`
+3. `review.md`
+4. `knowledge-delta.json`
 
-从这一版开始，validate 还会检查：
+命令会生成：
 
-1. plan.md 是否包含规定的结构段落。
-2. plan.json 是否符合 JSON schema。
-3. plan.md 和 plan.json 的 `Plan Status` 是否一致。
-4. clarification.md 是否与 plan status 保持一致。
-5. 如果 plan status 仍是 `needs_clarification`，workflow 会被阻止进入 Coding。
-6. 如果 plan status 已是 `ready`，则 tdd-cycle.md 和 test-review.md 必须存在。
-7. 如果 plan status 已是 `ready`，则 tdd-cycle.md 和 test-review.md 不能保留 TODO 占位。
-8. 如果 plan status 已是 `ready`，则 review.md 必须是结构化 code review artifact。
-9. 如果 plan status 已是 `ready`，则 review.md 必须给出可进入 reconcile 的最终结论：要么 `approved`，要么第 3 轮后以 `Review Disposition = proceed_with_known_issues` 继续。
+1. `docs/generated/run-knowledge/<workflow-id>.md`
+2. `artifacts/workflows/<workflow-id>/reconciliation.md`
 
-Coding 阶段还应遵守以下 TDD 规则：
+并把 manifest 状态推进到 `knowledge_base_updated`。
 
-1. 逻辑代码优先使用 Vitest。
-2. UI 交互优先使用 Playwright。
-3. 每个 plan step 都要经历 RED、GREEN、REFACTOR。
-4. 测试生成后先走 reviewer subagent，再视情况回到 Coding 修正。
+## 6. 推荐操作策略
 
-Test 阶段的职责则是：
-
-1. 运行完整逻辑测试和 UI 测试。
-2. 做回归与集成验证。
-3. 把结果整理进 test-report.md。
-
-Review 阶段的职责则是：
-
-1. 调用 `.github/agents/code-reviewer.agent.md` 做独立 code review。
-2. 如果 verdict 为 `changes_requested` 且还没到第 3 轮，把问题退回 Coding/Test 修正，并做必要的窄验证后重新送审。
-3. Review 最多执行 3 轮；第 3 轮后仍未 `approved` 时，workflow 直接进入 reconcile，不继续自动循环。
-4. `review.md` 必须记录 `Review Round`、`Review Status` 和 `Review Disposition`，并把未解决问题保留给用户处理。
-5. 界面必须能显示 review findings 和未解决 follow-up，确保人可以接手。
-
-### 3.4 生成 run knowledge
-
-推荐通过 workspace skill `.github/skills/docs-reconciler/SKILL.md` 驱动这一阶段，而不是手工逐个改文档。
-
-在所有产物补齐后运行：
-
-pnpm loom:workflow:reconcile -- <workflow-id>
-
-这一步会生成：
-
-1. docs/generated/run-knowledge/<workflow-id>.md
-2. artifacts/workflows/<workflow-id>/reconciliation.md
-
-同时它还会：
-
-1. 根据 knowledge-delta.json 的 candidate facts 更新 ARCHITECTURE、CONVENTIONS、DOMAIN 或 ADR。
-2. 对已存在事实跳过重复写入。
-3. 把 workflow 状态推进到 knowledge_base_updated。
-
-## 4. Knowledge Delta 最小约定
-
-knowledge-delta.json 采用以下最小结构：
-
-1. sourceWorkflowId
-2. sourceNodeIds
-3. timestamp
-4. candidateFacts
-5. affectedAreas
-6. confidence
-7. evidence
-8. recommendedTargets
-9. reviewRequired
-
-candidateFacts 中每一项至少应包含：
-
-1. fact
-2. type
-3. rationale
-4. supportingArtifacts
-5. freshness
-
-如有需要，可以额外补充 recommendedTarget。
-
-## 5. 推荐操作策略
-
-1. 当前阶段优先让 workflow 可追溯，不追求完全自动化。
-2. canonical docs 的改动保持少而准，并由 Docs Reconciler 做 target-scoped 更新。
-3. 讨论稿和方案稿继续作为上游设计输入保留，不直接被脚本改写。
-4. generated run knowledge 仍保留完整运行摘要，而 canonical docs 只吸收稳定事实。
-5. 如果后续需要为组件、测试、工具等目录拆出新的知识分支，应先把目标文档本身设计出来，再交给 Docs Reconciler 做增量维护。
+1. 先让 workflow 产物保持轻量、清晰、可追踪。
+2. 让 `plan.md` 作为唯一 planning handoff。
+3. 让 Coding 和 Testing 只生成当前阶段真正需要的结构化文件。
+4. 让 Review 作为标准 workflow 的结束点。
+5. 让 Docs Reconciler 聚焦稳定事实和 target-scoped update。

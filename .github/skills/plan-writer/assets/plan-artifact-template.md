@@ -1,7 +1,6 @@
-# Plan Artifact
+# Plan
 
 Workflow ID: {{WORKFLOW_ID}}
-Plan Status: TODO: 选择 ready 或 needs_clarification
 Goal: {{GOAL}}
 
 ## Source User Request
@@ -34,7 +33,7 @@ TODO: 明确本次回合真正要解决的问题。
 
 ## Open Questions
 
-1. TODO: 如果没有关键问题，请明确写“无阻塞问题”。
+1. TODO: 如果当前没有未决问题，请明确写“无”。
 
 ## Task Breakdown
 

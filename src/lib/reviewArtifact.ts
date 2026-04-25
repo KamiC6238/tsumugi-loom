@@ -9,7 +9,7 @@ export interface ReviewArtifactSummary {
   findings: string[]
   requiredRework: string[]
   unresolvedFollowUps: string[]
-  canProceedToDocs: boolean
+  hasFinalConclusion: boolean
 }
 
 function escapeForRegExp(value: string) {
@@ -65,7 +65,7 @@ export function parseReviewArtifact(content: string): ReviewArtifactSummary {
     ? (dispositionValue as ReviewDisposition)
     : null
   const round = Number.isInteger(roundValue) ? roundValue : null
-  const canProceedToDocs =
+  const hasFinalConclusion =
     (status === 'approved' && disposition === 'approved') ||
     (status === 'changes_requested' && round === 3 && disposition === 'proceed_with_known_issues')
 
@@ -75,8 +75,7 @@ export function parseReviewArtifact(content: string): ReviewArtifactSummary {
     disposition,
     findings,
     requiredRework,
-    unresolvedFollowUps:
-      disposition === 'proceed_with_known_issues' ? requiredRework : [],
-    canProceedToDocs,
+    unresolvedFollowUps: disposition === 'proceed_with_known_issues' ? requiredRework : [],
+    hasFinalConclusion,
   }
 }

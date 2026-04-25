@@ -4,22 +4,18 @@
 
 - Goal: 验证 workflow 自动化
 - Created At: 2026-04-24T10:15:35.610Z
-- Reconciled At: 2026-04-24T12:02:31.014Z
+- Reconciled At: 2026-04-25T05:34:06.932Z
 - Review Required: yes
 - Confidence: high
 
 ## Artifact Index
 
-- artifacts/workflows/20260424-181535-scaffold-smoke-test/plan.md
-- artifacts/workflows/20260424-181535-scaffold-smoke-test/plan.json
-- artifacts/workflows/20260424-181535-scaffold-smoke-test/clarification.md
-- artifacts/workflows/20260424-181535-scaffold-smoke-test/tdd-cycle.md
-- artifacts/workflows/20260424-181535-scaffold-smoke-test/test-review.md
 - artifacts/workflows/20260424-181535-scaffold-smoke-test/code-change.md
-- artifacts/workflows/20260424-181535-scaffold-smoke-test/test-report.md
-- artifacts/workflows/20260424-181535-scaffold-smoke-test/review.md
-- artifacts/workflows/20260424-181535-scaffold-smoke-test/final-summary.md
 - artifacts/workflows/20260424-181535-scaffold-smoke-test/knowledge-delta.json
+- artifacts/workflows/20260424-181535-scaffold-smoke-test/plan.md
+- artifacts/workflows/20260424-181535-scaffold-smoke-test/reconciliation.md
+- artifacts/workflows/20260424-181535-scaffold-smoke-test/review.md
+- artifacts/workflows/20260424-181535-scaffold-smoke-test/test-report.md
 
 ## Affected Areas
 
@@ -46,7 +42,7 @@
    - supportingArtifacts:
   - artifacts/workflows/20260424-181535-scaffold-smoke-test/plan.md
   - artifacts/workflows/20260424-181535-scaffold-smoke-test/code-change.md
-  - artifacts/workflows/20260424-181535-scaffold-smoke-test/final-summary.md
+  - artifacts/workflows/20260424-181535-scaffold-smoke-test/review.md
 
 ## Recommended Targets
 
@@ -65,5 +61,5 @@
 ## Notes
 
 - 本文件由 docs reconcile 脚本生成。
-- 它是 generated run knowledge，不直接等同于 canonical docs。
-- Docs Reconciler 会基于 knowledge delta 对 canonical docs 做受控写回，而不是整篇自由重写。
+- 它记录当前 workflow 的完整运行摘要。
+- Docs Reconciler 会基于 knowledge delta 对 canonical docs 做受控写回，并保持 target-scoped update 方式。

@@ -11,61 +11,57 @@ user-invocable: true
 
 在以下场景使用这个 skill：
 
-1. Plan 已完成且 `plan.json.planStatus = ready`。
+1. Plan 已完成，并已有结构化 `plan.md`。
 2. Coding 和 Test 已经产出实现、测试和验证结果。
-3. 需要在进入 docs reconcile 前做独立 code review。
-4. 需要把 Review 阶段做成正式 gate，而不是手写总结。
+3. 需要给当前实现做独立 code review。
+4. 需要把 Review 阶段产出结构化结论。
 
 ## What This Skill Produces
 
-这个 skill 的核心产物是 Review 阶段的结构化输出：
+这个 skill 产出 Review 阶段的结构化输出：
 
 1. 更新后的 `review.md`。
 2. 一次来自 `.github/agents/code-reviewer.agent.md` 的独立 code review verdict。
-3. 明确的返工项或放行结论。
+3. 明确的返工项、通过结论或已知后续项。
 
-## Preconditions
+## Entry Contract
 
-开始前必须确认：
+开始前确认：
 
-1. `plan.md`、`plan.json` 和 `clarification.md` 已存在。
-2. `plan.json.planStatus = ready`。
-3. `tdd-cycle.md`、`test-review.md`、`code-change.md` 和 `test-report.md` 已补齐。
-4. 相关代码和测试已经处于可验证状态。
-
-如果这些条件不满足，不要进入 Review。
+1. 当前 workflow 已有 `plan.md`。
+2. 当前回合的实现与验证结果已经记录在 `code-change.md`、`test-report.md` 和相关代码中。
+3. 如有 TDD 过程记录，可一并提供 `tdd-cycle.md` 和 `test-review.md`。
+4. 当前改动已经具备可执行的窄验证结果。
 
 ## Procedure
 
-1. 读取 `plan.md`、`plan.json`、`clarification.md`、`tdd-cycle.md`、`test-review.md`、`code-change.md`、`test-report.md` 和当前 `review.md`。
-2. 识别本轮真正需要审查的代码、测试和文档范围。
-3. 调用 `.github/agents/code-reviewer.agent.md` 做第 1 轮独立 code review。
-4. 如果 reviewer 返回 `changes_requested` 且当前还没到第 3 轮，把问题映射回 Coding 或 Test，先修正，再做必要的窄验证。
-5. 最多执行 3 轮 reviewer 调用，包含首轮 review 和后续复审。
-6. 只要任一轮 reviewer 返回 `approved`，就把 `review.md` 写成 `Review Status = approved`、`Review Disposition = approved`，并结束 Review。
-7. 如果第 3 轮后 reviewer 仍返回 `changes_requested`，就把 `review.md` 写成 `Review Status = changes_requested`、`Review Round = 3`、`Review Disposition = proceed_with_known_issues`，明确记录 Findings 和 Required Rework。
-8. 第 3 轮后不要继续自动 review loop；workflow 直接进入 docs reconcile，并把 unresolved review issues 暴露给用户做人工介入。
+1. 读取 `plan.md`、`code-change.md`、`test-report.md`、相关代码、相关测试，以及当前 `review.md`。
+2. 如存在 `tdd-cycle.md` 和 `test-review.md`，一并纳入 review 上下文。
+3. 识别本轮真正需要审查的代码、测试和文档范围。
+4. 调用 `.github/agents/code-reviewer.agent.md` 做第 1 轮独立 code review。
+5. reviewer 返回 `changes_requested` 时，把问题映射回 Coding 或 Testing，完成修正并补做必要的窄验证。
+6. 最多执行 3 轮 reviewer 调用，包含首轮 review 和后续复审。
+7. 任一轮 reviewer 返回 `approved` 时，将 `review.md` 记录为通过结论并结束 Review。
+8. 第 3 轮后若仍有 `changes_requested`，将 `review.md` 记录为带已知后续项的最终结论，保留 Findings 和 Required Rework 供人继续处理。
 
-## Review Rules
+## Review Gate
 
-必须把 code reviewer subagent 当成 gate，而不是附加建议。
+code reviewer subagent 作为 Review 阶段的 gate。
 
 规则如下：
 
-1. reviewer 只要指出 correctness bug、回归风险或明显测试缺口，就不能跳过。
-2. 前 2 轮如果是 `changes_requested`，必须先修正实现或测试，再重新送 reviewer。
-3. review loop 最多 3 轮；第 3 轮后仍未 `approved` 时，直接结束自动 review 并进入下一步。
-4. `review.md` 必须显式记录 `Review Round` 和 `Review Disposition`，让后续流程知道是已放行还是带着已知问题继续。
-5. reconcile 之前，`review.md` 必须是最终结论，而不是待处理草稿。
+1. reviewer 指出 correctness bug、回归风险或明显测试缺口时，先修正实现或测试，再重新送 reviewer。
+2. 前 2 轮的 `changes_requested` 对应新的修正和新的窄验证。
+3. 第 3 轮形成最终 review 结论，并在 `review.md` 中保留需要人工继续处理的事项。
+4. `review.md` 记录 `Review Round`、`Review Status` 和 `Review Disposition`，供后续阶段直接消费。
 
-## Output Rules
+## Delivery Contract
 
-1. 不要因为 build 通过或测试为绿就默认代码可放行。
-2. 不要忽略 contract drift、边界条件和失败路径。
-3. 不要把 reviewer 的 `changes_requested` 当成可忽略建议。
-4. 不要在 `review.md` 里只写摘要而不写具体结论。
-5. 不要在第 3 轮仍未通过后继续无限追加 review 回合。
-6. 不要在第 3 轮继续往下走时丢掉 reviewer 提出的未解决问题；这些问题必须能在界面中被用户看到。
+1. 让 review 结论聚焦 correctness、回归风险、contract drift、失败路径和可维护性。
+2. 让 reviewer 的 `changes_requested` 直接驱动修正动作和新的窄验证。
+3. 让 `review.md` 给出可执行的结论、Findings 和 Required Rework。
+4. 让第 3 轮后的未解决问题保留为清晰的人类后续项。
+5. 让 Review 阶段在 `approved` 或最终结论写入 `review.md` 后完成。
 
 ## References
 
