@@ -1,0 +1,15 @@
+{
+  "workflowId": "20260425-171832-refactor-app-vue",
+  "slug": "refactor-app-vue",
+  "goal": "按 Vue 组合式最佳实践拆分 App.vue，同时保持现有 workflow 页面行为不变。",
+  "createdAt": "2026-04-25T17:18:32+08:00",
+  "updatedAt": "2026-04-25T17:30:45+08:00",
+  "currentStage": "review",
+  "completedStages": [
+    "plan",
+    "coding",
+    "testing",
+    "review"
+  ],
+  "status": "completed"
+}

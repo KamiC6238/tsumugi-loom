@@ -56,18 +56,23 @@
 2. src/style.css
    定义全局视觉变量，并引入 Tailwind、shadcn-vue 和 Vue Flow 的基础样式。
 3. src/App.vue
-   顶层编排组件，负责页面布局、workflow 创建对话框、侧边栏列表、活动 workflow 明细和画布区域。
-4. src/lib/workflows.ts
+   薄组合层，只负责拼接 workflow feature 组件，并把 composable 暴露的状态与事件处理器向下分发。
+4. src/composables/useWorkflowStudio.ts
+   workflow 页面级编排层，集中管理 workflow 集合、活动 workflow、创建对话框开关，以及 create/select 等领域动作。
+5. src/components/workflow-studio/
+   workflow feature 组件层，其中 WorkflowSidebar 负责列表与入口按钮，WorkflowCanvasPanel 负责活动 workflow 的明细与画布，CreateWorkflowDialog 负责创建表单与草稿输入。
+6. src/lib/workflows.ts
    纯函数状态层，负责创建空状态、追加 workflow、切换活动 workflow 以及解析当前活动 workflow。
-5. src/components/ui/
+7. src/components/ui/
    复用型 UI 原语封装，目前主要承载按钮、输入框、标签和对话框。
 
 当前状态模型的核心约束：
 
-1. workflow 状态保存在 App.vue 的本地内存中。
+1. workflow 领域状态保存在 useWorkflowStudio 的本地内存中，而不是散落在多个页面组件里。
 2. 每次新建 workflow 都会生成固定结构的节点和边。
-3. 活动 workflow 由 activeWorkflowId 控制。
-4. 画布内容完全来自当前活动 workflow 的 nodes 和 edges。
+3. 活动 workflow 由 activeWorkflowId 控制，WorkflowSidebar 只发出切换事件，不直接修改状态。
+4. CreateWorkflowDialog 只持有输入草稿，并在关闭或保存后重置草稿；真正的 workflow 创建动作仍委托给 useWorkflowStudio。
+5. 画布内容完全来自当前活动 workflow 的 nodes 和 edges。
 
 ## 4. 仓库结构与职责
 
@@ -75,21 +80,23 @@
 
 1. src/
    前端运行时代码。
-2. src/lib/
-   与视图解耦的状态与辅助逻辑。
-3. src/components/
-   页面组件和可复用 UI 组件。
-4. tests/logic/
+2. src/composables/
+   页面级状态编排与组合逻辑。
+3. src/lib/
+   与视图解耦的纯状态与辅助逻辑。
+4. src/components/
+   workflow feature 组件和可复用 UI 组件。
+5. tests/logic/
    面向纯状态逻辑的 Vitest 测试。
-5. tests/ui/
+6. tests/ui/
    面向端到端交互的 Playwright 测试。
-6. public/ 与 src/assets/
+7. public/ 与 src/assets/
    静态资源。
-7. scripts/loom/
+8. scripts/loom/
    workflow 脚本自动化入口，负责仓库内 workflow scaffold 与相关流程控制。
-8. artifacts/workflows/
+9. artifacts/workflows/
    每次开发回合生成的显式 workflow 产物，如 plan、review、test-report 与 knowledge delta。
-9. docs/ 与根目录长期维护文档
+10. docs/ 与根目录长期维护文档
    项目知识库与长期保留的架构、说明和流程文档。
 
 ## 5. 当前数据流
@@ -98,11 +105,12 @@
 
 1. Vite 启动应用并加载 src/main.ts。
 2. src/main.ts 挂载 App.vue，同时引入 src/style.css 提供全局样式层。
-3. App.vue 通过 createEmptyWorkflowState 初始化本地 workflowState。
-4. 用户在对话框中输入名称后，saveWorkflow 调用 appendWorkflow 生成新的 WorkflowRecord，并将其设为当前活动 workflow。
-5. 侧边栏通过 computed 派生值渲染 workflow 列表、数量和选中状态。
-6. 主区域通过 getActiveWorkflow 读取活动 workflow，并把 nodes 与 edges 传给 Vue Flow 渲染。
-7. 用户点击其他 workflow 时，activateWorkflow 调用 selectWorkflow 切换 activeWorkflowId，主画布随之重渲染。
+3. App.vue 调用 useWorkflowStudio，拿到 workflows、activeWorkflow、isCreateDialogOpen 以及 create/select/open 等动作，并把它们下发给 feature 组件。
+4. useWorkflowStudio 通过 createEmptyWorkflowState 初始化本地 workflowState，并用 computed 暴露 workflows、activeWorkflowId 和 activeWorkflow。
+5. WorkflowSidebar 依据传入的 workflows 与 activeWorkflowId 渲染列表、数量和选中状态；点击按钮后通过事件把 create/select 意图回传给 App.vue。
+6. CreateWorkflowDialog 在组件内部维护输入草稿；当对话框关闭时重置草稿，保存时发出 create 事件并关闭对话框。
+7. useWorkflowStudio.createWorkflow 调用 appendWorkflow 生成新的 WorkflowRecord，并在成功创建后关闭对话框；activateWorkflow 调用 selectWorkflow 切换 activeWorkflowId。
+8. WorkflowCanvasPanel 接收 activeWorkflow，并把 nodes 与 edges 传给 Vue Flow 渲染；当没有活动 workflow 时显示空状态。
 
 当前仓库级验证流如下：
 
