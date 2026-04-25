@@ -22,7 +22,7 @@
 2. DAG 调度引擎和任务执行器。
 3. 模型路由、预算控制与推理编排。
 4. 后端 API、远程 artifact 存储与多用户协作。
-5. 浏览器运行时内的 knowledge retrieval 或自动 canonical docs 改写。
+5. 浏览器运行时内的 knowledge retrieval 或自动知识库文档改写。
 
 ## 2. 当前系统边界
 
@@ -86,11 +86,11 @@
 6. public/ 与 src/assets/
    静态资源。
 7. scripts/loom/
-   workflow 脚本自动化入口，负责仓库内 workflow scaffold、校验与知识写回相关流程控制。
+   workflow 脚本自动化入口，负责仓库内 workflow scaffold 与相关流程控制。
 8. artifacts/workflows/
    每次开发回合生成的显式 workflow 产物，如 plan、review、test-report 与 knowledge delta。
-9. docs/ 与根目录 canonical docs
-   项目知识库与长期保留的架构、约定和领域文档。
+9. docs/ 与根目录长期维护文档
+   项目知识库与长期保留的架构、说明和流程文档。
 
 ## 5. 当前数据流
 

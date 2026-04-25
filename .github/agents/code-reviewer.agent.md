@@ -1,6 +1,6 @@
 ---
 name: "Code Reviewer"
-description: "Review implementation changes for correctness bugs, regression risk, contract drift, missing validation, and insufficient coverage. Use as a subagent during the Review stage after Coding and Test are complete and before a workflow can be reconciled."
+description: "Review implementation changes for correctness bugs, regression risk, contract drift, missing validation, and insufficient coverage. Use as a subagent during the Review stage after Coding and Test are complete and before a workflow can be marked complete."
 tools: [read, search, execute]
 user-invocable: false
 agents: []
