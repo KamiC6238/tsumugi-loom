@@ -36,7 +36,6 @@ user-invocable: true
 4. 在 plan 中明确记录组件复用策略：哪些部分应直接复用 `shadcn-vue`、哪些部分需要基于现有组件组合、哪些部分在确认无可复用组件后才允许自定义实现，以及对应理由。
 5. 按 [plan markdown template](./assets/plan-artifact-template.md) 生成 `plan.md`。
 6. 检查 `Task Breakdown`、`Acceptance Criteria` 和 `Test Strategy` 是否足够支撑后续 Coding、Testing 和 Review。
-7. 必要时参考 [example user request](./assets/example-user-request.md) 和 [example plan](./assets/example-plan.md)。
 
 ## Writing Rules
 
