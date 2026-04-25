@@ -26,6 +26,11 @@ TODO: 明确本次回合真正要解决的问题。
 1. TODO:
 2. TODO:
 
+## Component Reuse Strategy
+
+1. TODO: 若涉及 UI，先说明是否复用 `shadcn-vue` 或 `src/components/ui/` 下已有组件。
+2. TODO: 若某部分无法复用，明确写出不能复用的原因，以及为何需要自定义实现。
+
 ## Assumptions
 
 1. TODO:
@@ -37,7 +42,7 @@ TODO: 明确本次回合真正要解决的问题。
 
 ## Task Breakdown
 
-1. TODO:
+1. TODO: 如涉及 UI，先确认组件复用策略与需要检查的 `shadcn-vue`/现有组件。
 2. TODO:
 3. TODO:
 
@@ -66,4 +71,4 @@ TODO: 明确本次回合真正要解决的问题。
 
 ## Handoff Notes for Coding
 
-TODO: 给 Coding 阶段明确交接边界和优先顺序。
+TODO: 给 Coding 阶段明确交接边界和优先顺序；若涉及 UI，必须明确哪些地方优先复用 `shadcn-vue`，哪些地方在确认无法复用后才允许自定义实现。

@@ -1,0 +1,15 @@
+{
+  "workflowId": "20260425-143708-vue-flow-sidebar-workflows",
+  "slug": "vue-flow-sidebar-workflows",
+  "goal": "基于 vue-flow 构建左右布局 workflow 页面，支持 sidebar 常驻 create、多 workflow 创建与切换。",
+  "createdAt": "2026-04-25T14:37:08.763+08:00",
+  "updatedAt": "2026-04-25T15:22:35.136+08:00",
+  "currentStage": "review",
+  "completedStages": [
+    "plan",
+    "coding",
+    "testing",
+    "review"
+  ],
+  "status": "completed"
+}

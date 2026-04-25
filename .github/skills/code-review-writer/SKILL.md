@@ -37,12 +37,13 @@ user-invocable: true
 
 1. 读取 `plan.md`、`code-change.md`、`test-report.md`、相关代码、相关测试，以及当前 `review.md`。
 2. 如存在 `tdd-cycle.md` 和 `test-review.md`，一并纳入 review 上下文。
-3. 识别本轮真正需要审查的代码、测试和文档范围。
-4. 调用 `.github/agents/code-reviewer.agent.md` 做第 1 轮独立 code review。
-5. reviewer 返回 `changes_requested` 时，把问题映射回 Coding 或 Testing，完成修正并补做必要的窄验证。
-6. 最多执行 3 轮 reviewer 调用，包含首轮 review 和后续复审。
-7. 任一轮 reviewer 返回 `approved` 时，将 `review.md` 记录为通过结论并结束 Review。
-8. 第 3 轮后若仍有 `changes_requested`，将 `review.md` 记录为带已知后续项的最终结论，保留 Findings 和 Required Rework 供人继续处理。
+3. 如果本轮包含 UI 组件变更，核对实现是否遵守 `plan.md` 中的组件复用策略，尤其是否优先复用了 `shadcn-vue` 或 `src/components/ui/` 下已有组件。
+4. 识别本轮真正需要审查的代码、测试和文档范围。
+5. 调用 `.github/agents/code-reviewer.agent.md` 做第 1 轮独立 code review。
+6. reviewer 返回 `changes_requested` 时，把问题映射回 Coding 或 Testing，完成修正并补做必要的窄验证。
+7. 最多执行 3 轮 reviewer 调用，包含首轮 review 和后续复审。
+8. 任一轮 reviewer 返回 `approved` 时，将 `review.md` 记录为通过结论并结束 Review。
+9. 第 3 轮后若仍有 `changes_requested`，将 `review.md` 记录为带已知后续项的最终结论，保留 Findings 和 Required Rework 供人继续处理。
 
 ## Review Gate
 
@@ -62,6 +63,7 @@ code reviewer subagent 作为 Review 阶段的 gate。
 3. 让 `review.md` 给出可执行的结论、Findings 和 Required Rework。
 4. 让第 3 轮后的未解决问题保留为清晰的人类后续项。
 5. 让 Review 阶段在 `approved` 或最终结论写入 `review.md` 后完成。
+6. 对 UI 变更，若实现绕过 `shadcn-vue`/现有组件且没有充分理由，应视为可维护性与流程偏差问题。
 
 ## References
 

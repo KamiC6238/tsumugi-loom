@@ -34,6 +34,14 @@ Your job is to review changed code and decide whether the workflow is safe to le
 - Error handling, validation, or cleanup logic is missing or incomplete.
 - Tests exist but do not meaningfully cover the changed behavior.
 - The change introduces avoidable complexity that obscures correctness or makes future breakage likely.
+- If the change adds or rewrites UI components, check whether the plan and implementation first considered reusing `shadcn-vue` or existing `src/components/ui/` components; unnecessary custom primitives should be flagged.
+
+## UI Component Reuse Gate
+
+- For UI work, inspect `plan.md`, touched Vue files, and `src/components/ui/` before approving custom component code.
+- Treat "did not check shadcn-vue reuse first" as a workflow/process defect when it leads to avoidable custom component implementation.
+- Only accept custom UI primitives when the workflow artifacts or code-change notes explain why existing `shadcn-vue` components are insufficient.
+
 
 ## Output Format
 
