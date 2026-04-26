@@ -1,23 +1,31 @@
 <script setup lang="ts">
 import CreateWorkflowDialog from '@/components/workflow-studio/CreateWorkflowDialog.vue'
+import SkillsPanel from '@/components/workflow-studio/SkillsPanel.vue'
 import WorkflowCanvasPanel from '@/components/workflow-studio/WorkflowCanvasPanel.vue'
 import WorkflowNodeDrawer from '@/components/workflow-studio/WorkflowNodeDrawer.vue'
 import WorkflowSidebar from '@/components/workflow-studio/WorkflowSidebar.vue'
 import { useWorkflowStudio } from '@/composables/useWorkflowStudio'
 
 const {
+  skills,
   workflows,
   activeWorkflowId,
   activeWorkflow,
+  activePanel,
   selectedNode,
+  addedSkillIds,
+  addedNodeSkills,
   isCreateDialogOpen,
   isNodeDrawerOpen,
+  isSkillsPanelActive,
   openCreateDialog,
   createWorkflow,
   activateWorkflow,
+  openSkillsPanel,
   openNodeDrawer,
   setNodeDrawerOpen,
-  renameSelectedNode,
+  saveSelectedNode,
+  toggleSkill,
 } = useWorkflowStudio()
 </script>
 
@@ -26,15 +34,24 @@ const {
     <WorkflowSidebar
       :workflows="workflows"
       :active-workflow-id="activeWorkflowId"
+      :active-panel="activePanel"
       @create="openCreateDialog"
+      @open-skills="openSkillsPanel"
       @select="activateWorkflow"
     />
-    <WorkflowCanvasPanel :active-workflow="activeWorkflow" @node-click="openNodeDrawer" />
+    <SkillsPanel
+      v-if="isSkillsPanelActive"
+      :skills="skills"
+      :added-skill-ids="addedSkillIds"
+      @toggle-skill="toggleSkill"
+    />
+    <WorkflowCanvasPanel v-else :active-workflow="activeWorkflow" @node-click="openNodeDrawer" />
     <WorkflowNodeDrawer
       :open="isNodeDrawerOpen"
       :node="selectedNode"
+      :added-node-skills="addedNodeSkills"
       @update:open="setNodeDrawerOpen"
-      @save="renameSelectedNode"
+      @save="saveSelectedNode"
     />
     <CreateWorkflowDialog v-model:open="isCreateDialogOpen" @create="createWorkflow" />
   </div>

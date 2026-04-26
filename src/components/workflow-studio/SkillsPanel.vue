@@ -1,0 +1,275 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import { Switch } from '@/components/ui/switch'
+import type { SkillCatalogItem } from '@/lib/skills'
+
+const props = defineProps<{
+  addedSkillIds: string[]
+  skills: SkillCatalogItem[]
+}>()
+
+const emit = defineEmits<{
+  toggleSkill: [skillId: string]
+}>()
+
+const macroSkills = computed(() => props.skills.filter((skill) => skill.kind === 'macro'))
+const nodeSkills = computed(() => props.skills.filter((skill) => skill.kind === 'node'))
+const addedSkillIdSet = computed(() => new Set(props.addedSkillIds))
+
+function isSkillAdded(skillId: string) {
+  return addedSkillIdSet.value.has(skillId)
+}
+
+function toggleSkill(skillId: string) {
+  emit('toggleSkill', skillId)
+}
+</script>
+
+<template>
+  <main class="skills-panel" data-testid="skills-panel">
+    <header class="skills-header">
+      <div class="skills-heading">
+        <p class="eyebrow">Global skills</p>
+        <h2 class="skills-title">Skills</h2>
+      </div>
+
+      <dl class="skills-metrics">
+        <div class="skills-metric-card">
+          <dt class="skills-metric-label">Added</dt>
+          <dd class="skills-metric-value">{{ addedSkillIds.length }}</dd>
+        </div>
+        <div class="skills-metric-card">
+          <dt class="skills-metric-label">Available</dt>
+          <dd class="skills-metric-value">{{ skills.length }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <section class="skill-group" aria-labelledby="macro-skills-heading">
+      <div class="skill-group-heading">
+        <h3 id="macro-skills-heading">Macro</h3>
+        <span>{{ macroSkills.length }}</span>
+      </div>
+
+      <ul class="skill-grid">
+        <li v-for="skill in macroSkills" :key="skill.id" class="skill-card">
+          <div class="skill-card-header">
+            <span class="skill-kind">Macro</span>
+            <Switch
+              :model-value="isSkillAdded(skill.id)"
+              :aria-label="`${skill.name} added`"
+              @update:model-value="toggleSkill(skill.id)"
+            />
+          </div>
+          <h4 class="skill-name">{{ skill.name }}</h4>
+          <p class="skill-description">{{ skill.description }}</p>
+          <p class="skill-path">{{ skill.path }}</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="skill-group" aria-labelledby="node-skills-heading">
+      <div class="skill-group-heading">
+        <h3 id="node-skills-heading">Node</h3>
+        <span>{{ nodeSkills.length }}</span>
+      </div>
+
+      <ul class="skill-grid">
+        <li v-for="skill in nodeSkills" :key="skill.id" class="skill-card">
+          <div class="skill-card-header">
+            <span class="skill-kind skill-kind--node">Node</span>
+            <Switch
+              :model-value="isSkillAdded(skill.id)"
+              :aria-label="`${skill.name} added`"
+              @update:model-value="toggleSkill(skill.id)"
+            />
+          </div>
+          <h4 class="skill-name">{{ skill.name }}</h4>
+          <p class="skill-description">{{ skill.description }}</p>
+          <p class="skill-path">{{ skill.path }}</p>
+        </li>
+      </ul>
+    </section>
+  </main>
+</template>
+
+<style scoped>
+.skills-panel {
+  display: grid;
+  gap: 1.35rem;
+  align-content: start;
+  padding: 1.75rem;
+  border: 1px solid rgba(83, 60, 37, 0.12);
+  border-radius: 1.75rem;
+  box-shadow: var(--shadow-soft);
+  background: linear-gradient(180deg, rgba(255, 250, 243, 0.94), rgba(249, 243, 234, 0.99));
+}
+
+.skills-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.skills-heading {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(59, 43, 29, 0.68);
+}
+
+.skills-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 2.8vw, 2.8rem);
+  font-weight: 700;
+  line-height: 0.96;
+  color: #241d17;
+}
+
+.skills-metrics {
+  display: flex;
+  gap: 0.9rem;
+  margin: 0;
+}
+
+.skills-metric-card {
+  min-width: 5.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.skills-metric-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(74, 58, 42, 0.65);
+}
+
+.skills-metric-value {
+  margin: 0.3rem 0 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #241d17;
+}
+
+.skill-group {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.skill-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: rgba(58, 42, 28, 0.74);
+}
+
+.skill-group-heading h3 {
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.skill-group-heading span {
+  display: inline-flex;
+  min-width: 2rem;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  font-weight: 700;
+}
+
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.85rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.skill-card {
+  display: grid;
+  min-height: 12rem;
+  align-content: start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid rgba(83, 60, 37, 0.12);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.skill-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.skill-kind {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.7rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: rgba(208, 122, 44, 0.16);
+  color: #5a3218;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.skill-kind--node {
+  background: rgba(63, 108, 98, 0.16);
+  color: #244d43;
+}
+
+.skill-name {
+  color: #241d17;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.skill-description {
+  color: rgba(54, 40, 28, 0.76);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.skill-path {
+  align-self: end;
+  color: rgba(58, 42, 28, 0.56);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .skills-header {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .skills-metrics {
+    width: 100%;
+  }
+
+  .skills-metric-card {
+    flex: 1;
+  }
+}
+</style>

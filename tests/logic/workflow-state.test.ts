@@ -6,6 +6,7 @@ import {
   getActiveWorkflow,
   renameWorkflowNode,
   selectWorkflow,
+  updateWorkflowNode,
 } from '../../src/lib/workflows'
 
 describe('workflow state', () => {
@@ -132,5 +133,41 @@ describe('workflow state', () => {
 
     expect(renameWorkflowNode(state, 'missing-workflow', 'node-1', 'Renamed')).toBe(state)
     expect(renameWorkflowNode(state, workflow?.id as string, 'missing-node', 'Renamed')).toBe(state)
+  })
+
+  it('updates and clears a node skill assignment while preserving rename behavior', () => {
+    const state = appendWorkflow(createEmptyWorkflowState(), 'Order Intake')
+    const workflow = getActiveWorkflow(state)
+    const targetNodeId = workflow?.nodes[1]?.id as string
+
+    const assigned = updateWorkflowNode(state, workflow?.id as string, targetNodeId, {
+      name: 'Manual review',
+      skillId: 'vue',
+    })
+    const assignedNode = getActiveWorkflow(assigned)?.nodes[1]
+
+    expect(assignedNode?.data).toMatchObject({
+      label: 'Manual review',
+      skillId: 'vue',
+    })
+
+    const renamed = renameWorkflowNode(assigned, workflow?.id as string, targetNodeId, 'Final review')
+    const renamedNode = getActiveWorkflow(renamed)?.nodes[1]
+
+    expect(renamedNode?.data).toMatchObject({
+      label: 'Final review',
+      skillId: 'vue',
+    })
+
+    const cleared = updateWorkflowNode(renamed, workflow?.id as string, targetNodeId, {
+      name: 'Final review',
+      skillId: null,
+    })
+    const clearedNode = getActiveWorkflow(cleared)?.nodes[1]
+
+    expect(clearedNode?.data).toMatchObject({
+      label: 'Final review',
+    })
+    expect(clearedNode?.data?.skillId).toBeUndefined()
   })
 })

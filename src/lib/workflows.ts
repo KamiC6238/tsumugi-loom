@@ -13,6 +13,11 @@ export interface WorkflowState {
   activeWorkflowId: string | null
 }
 
+export interface WorkflowNodeUpdate {
+  name: string
+  skillId?: string | null
+}
+
 const WORKFLOW_ACCENTS = ['#d07a2c', '#3f6c62', '#8a5a52', '#7c7064']
 
 export function createEmptyWorkflowState(): WorkflowState {
@@ -58,7 +63,16 @@ export function renameWorkflowNode(
   nodeId: string,
   rawLabel: string,
 ): WorkflowState {
-  const label = rawLabel.trim()
+  return updateWorkflowNode(state, workflowId, nodeId, { name: rawLabel })
+}
+
+export function updateWorkflowNode(
+  state: WorkflowState,
+  workflowId: string,
+  nodeId: string,
+  update: WorkflowNodeUpdate,
+): WorkflowState {
+  const label = update.name.trim()
 
   if (!label) {
     return state
@@ -79,19 +93,29 @@ export function renameWorkflowNode(
 
   const currentNode = workflow.nodes[nodeIndex]
   const currentLabel = String(currentNode.data?.label ?? '')
+  const currentSkillId = getNodeSkillId(currentNode)
+  const nextSkillId = getNextSkillId(update.skillId, currentSkillId)
 
-  if (currentLabel === label) {
+  if (currentLabel === label && currentSkillId === nextSkillId) {
     return state
+  }
+
+  const nextData: Record<string, unknown> = {
+    ...(isRecord(currentNode.data) ? currentNode.data : {}),
+    label,
+  }
+
+  if (nextSkillId) {
+    nextData.skillId = nextSkillId
+  } else {
+    delete nextData.skillId
   }
 
   const nextNodes = [...workflow.nodes]
 
   nextNodes[nodeIndex] = {
     ...currentNode,
-    data: {
-      ...currentNode.data,
-      label,
-    },
+    data: nextData,
   }
 
   const nextWorkflows = [...state.workflows]
@@ -109,6 +133,29 @@ export function renameWorkflowNode(
 
 export function getActiveWorkflow(state: WorkflowState): WorkflowRecord | null {
   return state.workflows.find((workflow) => workflow.id === state.activeWorkflowId) ?? null
+}
+
+function getNodeSkillId(node: Node): string | null {
+  const skillId = node.data?.skillId
+
+  return typeof skillId === 'string' && skillId.trim().length > 0 ? skillId : null
+}
+
+function getNextSkillId(
+  nextSkillId: string | null | undefined,
+  currentSkillId: string | null,
+): string | null {
+  if (nextSkillId === undefined) {
+    return currentSkillId
+  }
+
+  const trimmedSkillId = nextSkillId?.trim() ?? ''
+
+  return trimmedSkillId.length > 0 ? trimmedSkillId : null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
 function createWorkflowRecord(

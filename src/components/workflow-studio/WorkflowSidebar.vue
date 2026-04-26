@@ -1,14 +1,19 @@
 <script setup lang="ts">
+import { SparklesIcon } from 'lucide-vue-next'
+
 import { Button } from '@/components/ui/button'
+import type { WorkflowStudioPanel } from '@/composables/useWorkflowStudio'
 import type { WorkflowRecord } from '@/lib/workflows'
 
 defineProps<{
+  activePanel: WorkflowStudioPanel
   workflows: WorkflowRecord[]
   activeWorkflowId: string | null
 }>()
 
 const emit = defineEmits<{
   create: []
+  openSkills: []
   select: [workflowId: string]
 }>()
 
@@ -30,6 +35,19 @@ function selectWorkflow(workflowId: string) {
 
     <Button type="button" class="create-button" size="lg" @click="emit('create')">
       Create workflow
+    </Button>
+
+    <Button
+      type="button"
+      variant="outline"
+      class="skills-button"
+      :class="{ 'skills-button--active': activePanel === 'skills' }"
+      :aria-pressed="activePanel === 'skills'"
+      data-testid="open-skills-panel"
+      @click="emit('openSkills')"
+    >
+      <SparklesIcon aria-hidden="true" />
+      <span>Skills</span>
     </Button>
 
     <section class="workflow-list-section" aria-label="Workflows">
@@ -125,6 +143,7 @@ function selectWorkflow(workflowId: string) {
 }
 
 .create-button,
+.skills-button,
 .workflow-item {
   border: none;
   cursor: pointer;
@@ -145,7 +164,24 @@ function selectWorkflow(workflowId: string) {
   box-shadow: 0 14px 28px rgba(36, 29, 23, 0.2);
 }
 
+.skills-button {
+  min-height: 3rem;
+  gap: 0.55rem;
+  border: 1px solid rgba(83, 60, 37, 0.14);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.68);
+  color: #2f241b;
+  font-weight: 800;
+}
+
+.skills-button--active {
+  background: rgba(36, 29, 23, 0.94);
+  color: #fff9f0;
+  box-shadow: 0 16px 26px rgba(36, 29, 23, 0.16);
+}
+
 .create-button:hover,
+.skills-button:hover,
 .workflow-item:hover {
   transform: translateY(-1px);
 }

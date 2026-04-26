@@ -2,18 +2,33 @@ import type { Node } from '@vue-flow/core'
 import { computed, shallowRef } from 'vue'
 
 import {
+  getAddedNodeSkills,
+  getAddedSkills,
+  skillCatalog,
+  toggleSkillId,
+} from '@/lib/skills'
+import {
   appendWorkflow,
   createEmptyWorkflowState,
   getActiveWorkflow,
-  renameWorkflowNode,
   selectWorkflow,
+  updateWorkflowNode,
 } from '@/lib/workflows'
 import type { WorkflowRecord, WorkflowState } from '@/lib/workflows'
 
+export interface SelectedNodeSavePayload {
+  name: string
+  skillId?: string | null
+}
+
+export type WorkflowStudioPanel = 'workflow' | 'skills'
+
 export function useWorkflowStudio() {
   const workflowState = shallowRef<WorkflowState>(createEmptyWorkflowState())
+  const activePanel = shallowRef<WorkflowStudioPanel>('workflow')
   const isCreateDialogOpen = shallowRef(false)
   const selectedNodeId = shallowRef<string | null>(null)
+  const addedSkillIds = shallowRef<string[]>([])
 
   const workflows = computed(() => workflowState.value.workflows)
   const activeWorkflowId = computed(() => workflowState.value.activeWorkflowId)
@@ -28,6 +43,18 @@ export function useWorkflowStudio() {
     return activeWorkflow.value.nodes.find((node) => node.id === selectedNodeId.value) ?? null
   })
   const isNodeDrawerOpen = computed(() => selectedNode.value !== null)
+  const isSkillsPanelActive = computed(() => activePanel.value === 'skills')
+  const addedSkills = computed(() => getAddedSkills(skillCatalog, addedSkillIds.value))
+  const addedNodeSkills = computed(() => getAddedNodeSkills(skillCatalog, addedSkillIds.value))
+
+  function openWorkflowPanel() {
+    activePanel.value = 'workflow'
+  }
+
+  function openSkillsPanel() {
+    activePanel.value = 'skills'
+    closeNodeDrawer()
+  }
 
   function openCreateDialog() {
     isCreateDialogOpen.value = true
@@ -45,6 +72,7 @@ export function useWorkflowStudio() {
     }
 
     workflowState.value = nextState
+    openWorkflowPanel()
     closeNodeDrawer()
     closeCreateDialog()
   }
@@ -57,6 +85,7 @@ export function useWorkflowStudio() {
     }
 
     workflowState.value = nextState
+    openWorkflowPanel()
     closeNodeDrawer()
   }
 
@@ -85,15 +114,22 @@ export function useWorkflowStudio() {
   }
 
   function renameSelectedNode(name: string) {
+    saveSelectedNode({ name })
+  }
+
+  function saveSelectedNode(payload: SelectedNodeSavePayload) {
     if (!activeWorkflowId.value || !selectedNodeId.value) {
       return
     }
 
-    const nextState = renameWorkflowNode(
+    const nextState = updateWorkflowNode(
       workflowState.value,
       activeWorkflowId.value,
       selectedNodeId.value,
-      name,
+      {
+        name: payload.name,
+        skillId: getAllowedNodeSkillId(payload.skillId),
+      },
     )
 
     if (nextState === workflowState.value) {
@@ -103,13 +139,47 @@ export function useWorkflowStudio() {
     workflowState.value = nextState
   }
 
+  function getAllowedNodeSkillId(skillId: string | null | undefined) {
+    if (skillId === undefined) {
+      return undefined
+    }
+
+    if (!skillId) {
+      return null
+    }
+
+    return addedNodeSkills.value.some((skill) => skill.id === skillId) ? skillId : null
+  }
+
+  function isSkillAdded(skillId: string) {
+    return addedSkillIds.value.includes(skillId)
+  }
+
+  function toggleSkill(skillId: string) {
+    const skillExists = skillCatalog.some((skill) => skill.id === skillId)
+
+    if (!skillExists) {
+      return
+    }
+
+    addedSkillIds.value = toggleSkillId(addedSkillIds.value, skillId)
+  }
+
   return {
+    skills: skillCatalog,
     workflows,
     activeWorkflowId,
     activeWorkflow,
+    activePanel,
     selectedNode,
+    addedSkillIds,
+    addedSkills,
+    addedNodeSkills,
     isCreateDialogOpen,
     isNodeDrawerOpen,
+    isSkillsPanelActive,
+    openWorkflowPanel,
+    openSkillsPanel,
     openCreateDialog,
     closeCreateDialog,
     createWorkflow,
@@ -118,5 +188,8 @@ export function useWorkflowStudio() {
     closeNodeDrawer,
     setNodeDrawerOpen,
     renameSelectedNode,
+    saveSelectedNode,
+    isSkillAdded,
+    toggleSkill,
   }
 }

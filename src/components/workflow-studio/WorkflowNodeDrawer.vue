@@ -14,33 +14,47 @@ import {
 } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
+import type { SkillCatalogItem } from '@/lib/skills'
 
-const props = defineProps<{
+interface NodeDrawerSavePayload {
+  name: string
+  skillId: string | null
+}
+
+const props = withDefaults(defineProps<{
   open: boolean
   node: FlowNode | null
-}>()
+  addedNodeSkills?: SkillCatalogItem[]
+}>(), {
+  addedNodeSkills: () => [],
+})
 
 const emit = defineEmits<{
-  save: [name: string]
+  save: [payload: NodeDrawerSavePayload]
   'update:open': [open: boolean]
 }>()
 
 const draftNodeName = shallowRef('')
+const draftNodeSkillId = shallowRef('')
 const drawerPanelRef = useTemplateRef<HTMLElement>('drawerPanel')
 
 const selectedNodeLabel = computed(() => String(props.node?.data?.label ?? ''))
 const trimmedNodeName = computed(() => draftNodeName.value.trim())
 const canSaveNode = computed(() => trimmedNodeName.value.length > 0)
+const hasAddedNodeSkills = computed(() => props.addedNodeSkills.length > 0)
 
 watch(
-  () => [props.open, props.node?.id ?? null] as const,
+  () => [props.open, props.node?.id ?? null, props.addedNodeSkills.map((skill) => skill.id).join('|')] as const,
   ([isOpen, nodeId]) => {
     if (!isOpen || !nodeId) {
       draftNodeName.value = ''
+      draftNodeSkillId.value = ''
       return
     }
 
     draftNodeName.value = selectedNodeLabel.value
+    draftNodeSkillId.value = getAvailableNodeSkillId()
   },
   { immediate: true },
 )
@@ -78,8 +92,21 @@ function saveNode() {
   }
 
   draftNodeName.value = trimmedNodeName.value
-  emit('save', trimmedNodeName.value)
+  emit('save', {
+    name: trimmedNodeName.value,
+    skillId: draftNodeSkillId.value || null,
+  })
   closeDrawer()
+}
+
+function getAvailableNodeSkillId() {
+  const nodeSkillId = props.node?.data?.skillId
+
+  if (typeof nodeSkillId !== 'string') {
+    return ''
+  }
+
+  return props.addedNodeSkills.some((skill) => skill.id === nodeSkillId) ? nodeSkillId : ''
 }
 
 onMounted(() => {
@@ -117,6 +144,29 @@ onUnmounted(() => {
                 autofocus
                 class="node-name-input"
               />
+            </div>
+
+            <div class="drawer-field">
+              <Label class="drawer-label" for="node-skill">Node skill</Label>
+              <Select
+                id="node-skill"
+                v-model="draftNodeSkillId"
+                name="nodeSkill"
+                class="node-skill-select"
+                data-testid="node-skill-select"
+                :disabled="!hasAddedNodeSkills"
+              >
+                <option v-if="hasAddedNodeSkills" value="">No node skill</option>
+                <option v-else value="">No node skills added</option>
+                <option
+                  v-for="skill in addedNodeSkills"
+                  :key="skill.id"
+                  :value="skill.id"
+                  data-testid="node-skill-option"
+                >
+                  {{ skill.name }}
+                </option>
+              </Select>
             </div>
 
             <DrawerFooter class="drawer-actions">
@@ -213,6 +263,12 @@ onUnmounted(() => {
   min-height: 3.25rem;
   border-color: rgba(84, 64, 45, 0.2);
   background: rgba(255, 250, 243, 0.86);
+}
+
+.node-skill-select {
+  min-height: 3.25rem;
+  border-color: rgba(84, 64, 45, 0.2);
+  background-color: rgba(255, 250, 243, 0.86);
 }
 
 .drawer-actions {
