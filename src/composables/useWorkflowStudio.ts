@@ -1,12 +1,10 @@
 import type { Node } from '@vue-flow/core'
+import { storeToRefs } from 'pinia'
 import { computed, shallowRef } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 
-import {
-  getAddedNodeSkills,
-  getAddedSkills,
-  skillCatalog,
-  toggleSkillId,
-} from '@/lib/skills'
+import { skillCatalog } from '@/lib/skills'
+import type { SkillCatalogItem } from '@/lib/skills'
 import {
   appendWorkflow,
   createEmptyWorkflowState,
@@ -15,6 +13,7 @@ import {
   updateWorkflowNode,
 } from '@/lib/workflows'
 import type { WorkflowRecord, WorkflowState } from '@/lib/workflows'
+import { useSkillsStore } from '@/stores/skills'
 
 export interface SelectedNodeSavePayload {
   name: string
@@ -23,12 +22,41 @@ export interface SelectedNodeSavePayload {
 
 export type WorkflowStudioPanel = 'workflow' | 'skills'
 
-export function useWorkflowStudio() {
+export interface WorkflowStudioApi {
+  skills: SkillCatalogItem[]
+  workflows: ComputedRef<WorkflowRecord[]>
+  activeWorkflowId: ComputedRef<string | null>
+  activeWorkflow: ComputedRef<WorkflowRecord | null>
+  activePanel: Ref<WorkflowStudioPanel>
+  selectedNode: ComputedRef<Node | null>
+  addedSkillIds: Ref<string[]>
+  addedSkills: Ref<SkillCatalogItem[]>
+  addedNodeSkills: Ref<SkillCatalogItem[]>
+  isCreateDialogOpen: Ref<boolean>
+  isNodeDrawerOpen: ComputedRef<boolean>
+  isSkillsPanelActive: ComputedRef<boolean>
+  openWorkflowPanel: () => void
+  openSkillsPanel: () => void
+  openCreateDialog: () => void
+  closeCreateDialog: () => void
+  createWorkflow: (name: string) => void
+  activateWorkflow: (workflowId: string) => void
+  openNodeDrawer: (nodeId: string) => void
+  closeNodeDrawer: () => void
+  setNodeDrawerOpen: (nextOpen: boolean) => void
+  renameSelectedNode: (name: string) => void
+  saveSelectedNode: (payload: SelectedNodeSavePayload) => void
+  isSkillAdded: (skillId: string) => boolean
+  toggleSkill: (skillId: string) => void
+}
+
+export function useWorkflowStudio(): WorkflowStudioApi {
+  const skillsStore = useSkillsStore()
+  const { addedSkillIds, addedSkills, addedNodeSkills } = storeToRefs(skillsStore)
   const workflowState = shallowRef<WorkflowState>(createEmptyWorkflowState())
   const activePanel = shallowRef<WorkflowStudioPanel>('workflow')
   const isCreateDialogOpen = shallowRef(false)
   const selectedNodeId = shallowRef<string | null>(null)
-  const addedSkillIds = shallowRef<string[]>([])
 
   const workflows = computed(() => workflowState.value.workflows)
   const activeWorkflowId = computed(() => workflowState.value.activeWorkflowId)
@@ -44,8 +72,6 @@ export function useWorkflowStudio() {
   })
   const isNodeDrawerOpen = computed(() => selectedNode.value !== null)
   const isSkillsPanelActive = computed(() => activePanel.value === 'skills')
-  const addedSkills = computed(() => getAddedSkills(skillCatalog, addedSkillIds.value))
-  const addedNodeSkills = computed(() => getAddedNodeSkills(skillCatalog, addedSkillIds.value))
 
   function openWorkflowPanel() {
     activePanel.value = 'workflow'
@@ -152,17 +178,11 @@ export function useWorkflowStudio() {
   }
 
   function isSkillAdded(skillId: string) {
-    return addedSkillIds.value.includes(skillId)
+    return skillsStore.isSkillAdded(skillId)
   }
 
   function toggleSkill(skillId: string) {
-    const skillExists = skillCatalog.some((skill) => skill.id === skillId)
-
-    if (!skillExists) {
-      return
-    }
-
-    addedSkillIds.value = toggleSkillId(addedSkillIds.value, skillId)
+    skillsStore.toggleSkill(skillId)
   }
 
   return {

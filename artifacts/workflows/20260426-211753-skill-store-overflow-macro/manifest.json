@@ -1,0 +1,10 @@
+{
+  "workflowId": "20260426-211753-skill-store-overflow-macro",
+  "slug": "skill-store-overflow-macro",
+  "goal": "修复 skill 卡片文本溢出、用 Pinia 存储用户添加的 skills 并修正 macro 分类",
+  "createdAt": "2026-04-26T21:18:05+0800",
+  "updatedAt": "2026-04-26T21:35:43+0800",
+  "currentStage": "review",
+  "completedStages": ["plan", "coding", "testing", "review"],
+  "status": "completed"
+}

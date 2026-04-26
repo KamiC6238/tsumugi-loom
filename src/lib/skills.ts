@@ -28,17 +28,7 @@ const skillModules = import.meta.glob('../../.github/skills/*/SKILL.md', {
   query: '?raw',
 }) as Record<string, string>
 
-const macroSkillTerms = [
-  'workflow',
-  'plan',
-  'coding',
-  'review',
-  'commit',
-  'push',
-  'docs',
-  'documentation',
-  'reconciler',
-]
+const implicitMacroSkillIds = new Set(['start-standard-workflow'])
 
 export const skillCatalog = buildSkillCatalog(skillModules)
 
@@ -80,9 +70,7 @@ export function classifySkillKind(metadata: {
     return metadata.kind
   }
 
-  const searchableText = `${metadata.name} ${metadata.description ?? ''}`.toLowerCase()
-
-  return macroSkillTerms.some((term) => searchableText.includes(term)) ? 'macro' : 'node'
+  return implicitMacroSkillIds.has(metadata.name) ? 'macro' : 'node'
 }
 
 export function toggleSkillId(selectedSkillIds: readonly string[], skillId: string): string[] {

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 
 import App from '../../src/App.vue'
@@ -79,6 +80,7 @@ describe('workflow studio UI wiring', () => {
   it('renders the skills panel in the right layout after the sidebar entry is clicked', async () => {
     const wrapper = mount(App, {
       global: {
+        plugins: [createPinia()],
         stubs: {
           CreateWorkflowDialog: { template: '<div data-testid="create-dialog" />' },
           SkillsPanel: {
@@ -104,6 +106,7 @@ describe('workflow studio UI wiring', () => {
   it('passes only added node skills from App to the node drawer', async () => {
     const wrapper = mount(App, {
       global: {
+        plugins: [createPinia()],
         stubs: {
           CreateWorkflowDialog: { template: '<div data-testid="create-dialog" />' },
           SkillsPanel: {
@@ -130,6 +133,38 @@ describe('workflow studio UI wiring', () => {
     await wrapper.get('[data-testid="toggle-node"]').trigger('click')
 
     expect(wrapper.get('[data-testid="node-drawer"]').text()).toBe('vue')
+  })
+
+  it('passes newly node-classified workflow helper skills from App to the node drawer', async () => {
+    const wrapper = mount(App, {
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          CreateWorkflowDialog: { template: '<div data-testid="create-dialog" />' },
+          SkillsPanel: {
+            props: ['skills', 'addedSkillIds'],
+            emits: ['toggleSkill'],
+            template: `
+              <section data-testid="skills-panel">
+                <button data-testid="toggle-start" @click="$emit('toggleSkill', 'start-standard-workflow')">Start</button>
+                <button data-testid="toggle-commit" @click="$emit('toggleSkill', 'git-commit-push')">Commit</button>
+              </section>
+            `,
+          },
+          WorkflowCanvasPanel: { template: '<section data-testid="canvas-panel" />' },
+          WorkflowNodeDrawer: {
+            props: ['addedNodeSkills'],
+            template: '<aside data-testid="node-drawer">{{ addedNodeSkills.map((skill) => skill.id).join(",") }}</aside>',
+          },
+        },
+      },
+    })
+
+    await wrapper.get('[data-testid="open-skills-panel"]').trigger('click')
+    await wrapper.get('[data-testid="toggle-start"]').trigger('click')
+    await wrapper.get('[data-testid="toggle-commit"]').trigger('click')
+
+    expect(wrapper.get('[data-testid="node-drawer"]').text()).toBe('git-commit-push')
   })
 
   it('renders drawer select options from added node skills and disables the empty state', () => {

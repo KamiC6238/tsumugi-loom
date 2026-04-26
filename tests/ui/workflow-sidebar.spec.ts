@@ -227,3 +227,74 @@ test('clears the selected node when closing the drawer', async ({ page }) => {
 
   await expect(nodeDrawer).toBeVisible()
 })
+
+test('shows added node skills in the node drawer select', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByTestId('open-skills-panel').click()
+  await page.getByRole('switch', { name: 'start-standard-workflow added' }).click()
+  await page.getByRole('switch', { name: 'git-commit-push added' }).click()
+
+  await page.getByRole('button', { name: 'Create workflow' }).click()
+
+  const createDialog = page.getByRole('dialog', { name: 'Create workflow' })
+
+  await createDialog.getByLabel('Workflow name').fill('Orders Intake')
+  await createDialog.getByRole('button', { name: 'Save workflow' }).click()
+
+  const detailPanel = page.getByTestId('workflow-detail')
+
+  await detailPanel.getByText('Orders Intake review').click()
+
+  const nodeDrawer = page.getByRole('dialog', { name: 'Edit node' })
+  const nodeSkillSelect = nodeDrawer.getByLabel('Node skill')
+
+  await expect(nodeDrawer).toBeVisible()
+  await expect(nodeSkillSelect).toBeEnabled()
+  await expect(nodeSkillSelect.locator('option')).toHaveText(['No node skill', 'git-commit-push'])
+
+  await nodeSkillSelect.selectOption('git-commit-push')
+  await nodeDrawer.getByRole('button', { name: 'Save node' }).click()
+
+  await expect(nodeDrawer).not.toBeVisible()
+})
+
+test('keeps skill card text contained inside cards across viewports', async ({ page }) => {
+  async function expectSkillCardsToContainText() {
+    await page.goto('/')
+    await page.getByTestId('open-skills-panel').click()
+
+    const skillCards = page.locator('.skill-card')
+
+    await expect(skillCards.first()).toBeVisible()
+
+    const overflowingItems = await skillCards.evaluateAll((cards) =>
+      cards.flatMap((card, cardIndex) => {
+        const cardRect = card.getBoundingClientRect()
+        const textElements = Array.from(
+          card.querySelectorAll<HTMLElement>('.skill-name, .skill-description, .skill-path'),
+        )
+
+        return textElements
+          .filter((element) => {
+            const elementRect = element.getBoundingClientRect()
+
+            return (
+              element.scrollWidth > element.clientWidth + 1
+              || elementRect.left < cardRect.left - 1
+              || elementRect.right > cardRect.right + 1
+            )
+          })
+          .map((element) => `${cardIndex}:${element.className}`)
+      }),
+    )
+
+    expect(overflowingItems).toEqual([])
+  }
+
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await expectSkillCardsToContainText()
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expectSkillCardsToContainText()
+})

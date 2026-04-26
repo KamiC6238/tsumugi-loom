@@ -1,8 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useWorkflowStudio } from '../../src/composables/useWorkflowStudio'
+import { useSkillsStore } from '../../src/stores/skills'
 
 describe('workflow studio skills state', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('switches the right layout between workflow canvas and the global skills panel', () => {
     const studio = useWorkflowStudio()
 
@@ -35,6 +41,23 @@ describe('workflow studio skills state', () => {
 
     expect(studio.addedSkillIds.value).toEqual([])
     expect(studio.isSkillAdded('vue')).toBe(false)
+  })
+
+  it('uses the Pinia skills store as the shared source of added skill state', () => {
+    const studio = useWorkflowStudio()
+    const skillsStore = useSkillsStore()
+
+    studio.toggleSkill('vue')
+
+    expect(skillsStore.addedSkillIds).toEqual(['vue'])
+
+    skillsStore.toggleSkill('git-commit-push')
+
+    expect(studio.addedSkillIds.value).toEqual(['vue', 'git-commit-push'])
+    expect(studio.addedNodeSkills.value.map((skill) => skill.id)).toEqual([
+      'git-commit-push',
+      'vue',
+    ])
   })
 
   it('ignores toggle requests for unknown skills', () => {

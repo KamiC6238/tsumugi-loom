@@ -97,6 +97,7 @@ function toggleSkill(skillId: string) {
 <style scoped>
 .skills-panel {
   display: grid;
+  min-width: 0;
   gap: 1.35rem;
   align-content: start;
   padding: 1.75rem;
@@ -193,7 +194,8 @@ function toggleSkill(skillId: string) {
 
 .skill-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  min-width: 0;
   gap: 0.85rem;
   padding: 0;
   margin: 0;
@@ -202,6 +204,7 @@ function toggleSkill(skillId: string) {
 
 .skill-card {
   display: grid;
+  min-width: 0;
   min-height: 12rem;
   align-content: start;
   gap: 0.75rem;
@@ -213,6 +216,7 @@ function toggleSkill(skillId: string) {
 
 .skill-card-header {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
@@ -238,19 +242,24 @@ function toggleSkill(skillId: string) {
 }
 
 .skill-name {
+  min-width: 0;
   color: #241d17;
   font-size: 1.05rem;
   font-weight: 800;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .skill-description {
+  min-width: 0;
   color: rgba(54, 40, 28, 0.76);
   font-size: 0.92rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .skill-path {
+  min-width: 0;
   align-self: end;
   color: rgba(58, 42, 28, 0.56);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

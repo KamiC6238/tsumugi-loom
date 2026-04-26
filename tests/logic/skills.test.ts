@@ -82,12 +82,12 @@ describe('skill catalog', () => {
   })
 
   it.each([
-    ['code-review-writer', 'macro'],
-    ['docs-reconciler', 'macro'],
-    ['git-commit-push', 'macro'],
-    ['plan-writer', 'macro'],
+    ['code-review-writer', 'node'],
+    ['docs-reconciler', 'node'],
+    ['git-commit-push', 'node'],
+    ['plan-writer', 'node'],
     ['start-standard-workflow', 'macro'],
-    ['tdd-coding-writer', 'macro'],
+    ['tdd-coding-writer', 'node'],
     ['vitest', 'node'],
     ['vue', 'node'],
     ['vue-best-practices', 'node'],
@@ -96,6 +96,35 @@ describe('skill catalog', () => {
 
     expect(realSkill?.kind).toBe(expectedKind)
     expect(classifySkillKind({ name, description: realSkill?.description })).toBe(expectedKind)
+  })
+
+  it('only treats start-standard-workflow as an implicit macro when frontmatter has no kind', () => {
+    expect(classifySkillKind({
+      name: 'git-commit-push',
+      description: 'Analyze current git changes, create a commit, and push safely.',
+    })).toBe('node')
+    expect(classifySkillKind({
+      name: 'start-standard-workflow',
+      description: 'Start the standard implementation workflow from a raw user requirement.',
+    })).toBe('macro')
+  })
+
+  it('keeps the real catalog macro list limited to start-standard-workflow', () => {
+    expect(skillCatalog.filter((skill) => skill.kind === 'macro').map((skill) => skill.id))
+      .toEqual(['start-standard-workflow'])
+  })
+
+  it('keeps explicit skill kind frontmatter authoritative', () => {
+    expect(classifySkillKind({
+      name: 'custom-node',
+      description: 'A workflow helper that stays node scoped.',
+      kind: 'node',
+    })).toBe('node')
+    expect(classifySkillKind({
+      name: 'custom-macro',
+      description: 'Runs a multi-stage workflow.',
+      kind: 'macro',
+    })).toBe('macro')
   })
 
   it('toggles added skill ids without duplicating them', () => {
