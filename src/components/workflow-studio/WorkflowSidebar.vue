@@ -27,10 +27,6 @@ function selectWorkflow(workflowId: string) {
     <div class="brand-block">
       <p class="eyebrow">Tsumugi Loom</p>
       <h1 class="brand-title">Workflow studio</h1>
-      <p class="lede">
-        Build named workflow canvases from the sidebar and move between them without leaving the
-        page.
-      </p>
     </div>
 
     <Button type="button" class="create-button" size="lg" @click="emit('create')">
@@ -85,6 +81,9 @@ function selectWorkflow(workflowId: string) {
 .workflow-sidebar {
   position: relative;
   display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   flex-direction: column;
   gap: 1.5rem;
   padding: 1.75rem;
@@ -135,13 +134,6 @@ function selectWorkflow(workflowId: string) {
   color: #241d17;
 }
 
-.lede {
-  max-width: 34rem;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: rgba(54, 40, 28, 0.78);
-}
-
 .create-button,
 .skills-button,
 .workflow-item {
@@ -188,7 +180,11 @@ function selectWorkflow(workflowId: string) {
 
 .workflow-list-section {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
   gap: 0.85rem;
+  align-content: start;
 }
 
 .section-heading {
@@ -219,10 +215,14 @@ function selectWorkflow(workflowId: string) {
 
 .workflow-list {
   display: grid;
+  align-content: start;
   gap: 0.75rem;
   padding: 0;
   margin: 0;
   list-style: none;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 0.35rem;
 }
 
 .workflow-item {

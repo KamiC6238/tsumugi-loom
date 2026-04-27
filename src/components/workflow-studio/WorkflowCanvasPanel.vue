@@ -75,6 +75,10 @@ function handleNodeClick({ node }: NodeMouseEvent) {
 <style scoped>
 .workflow-detail {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   gap: 1.5rem;
   padding: 1.75rem;
   border: 1px solid rgba(83, 60, 37, 0.12);
@@ -83,6 +87,7 @@ function handleNodeClick({ node }: NodeMouseEvent) {
   background:
     radial-gradient(circle at top right, rgba(63, 108, 98, 0.15), transparent 24%),
     linear-gradient(180deg, rgba(255, 250, 243, 0.92), rgba(249, 243, 234, 0.98));
+  overflow: hidden;
 }
 
 .eyebrow {
@@ -151,7 +156,8 @@ function handleNodeClick({ node }: NodeMouseEvent) {
 
 .canvas-frame,
 .empty-state {
-  min-height: min(40rem, calc(100svh - 8rem));
+  min-height: 0;
+  height: 100%;
   border-radius: 1.5rem;
   background: rgba(255, 252, 247, 0.88);
 }
@@ -167,6 +173,7 @@ function handleNodeClick({ node }: NodeMouseEvent) {
 
 .empty-state {
   display: grid;
+  grid-row: 1 / -1;
   align-content: center;
   justify-items: start;
   gap: 0.9rem;
@@ -175,6 +182,11 @@ function handleNodeClick({ node }: NodeMouseEvent) {
 }
 
 @media (max-width: 900px) {
+  .workflow-detail {
+    height: auto;
+    overflow: visible;
+  }
+
   .detail-header {
     flex-direction: column;
     align-items: start;
@@ -191,6 +203,7 @@ function handleNodeClick({ node }: NodeMouseEvent) {
   .canvas-frame,
   .empty-state {
     min-height: 26rem;
+    height: auto;
   }
 }
 </style>

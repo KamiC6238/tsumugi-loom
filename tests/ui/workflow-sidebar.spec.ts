@@ -67,6 +67,101 @@ test('keeps save disabled for blank workflow names', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Orders Intake' })).toHaveCount(0)
 })
 
+test('makes the empty workflow state fill the detail panel content area', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+
+  const detailPanel = page.getByTestId('workflow-detail')
+  const emptyState = page.locator('.empty-state')
+
+  await expect(emptyState).toBeVisible()
+
+  const metrics = await page.evaluate(() => {
+    const detailPanelElement = document.querySelector<HTMLElement>('[data-testid="workflow-detail"]')
+    const emptyStateElement = document.querySelector<HTMLElement>('.empty-state')
+
+    if (!detailPanelElement || !emptyStateElement) {
+      throw new Error('Expected workflow detail panel and empty state to exist')
+    }
+
+    const styles = getComputedStyle(detailPanelElement)
+    const availableHeight =
+      detailPanelElement.clientHeight
+      - parseFloat(styles.paddingTop)
+      - parseFloat(styles.paddingBottom)
+
+    return {
+      availableHeight,
+      emptyStateHeight: emptyStateElement.clientHeight,
+    }
+  })
+
+  expect(Math.abs(metrics.emptyStateHeight - metrics.availableHeight)).toBeLessThanOrEqual(2)
+  await expect(detailPanel).toContainText('No workflow selected')
+})
+
+test('keeps the page fixed and scrolls only the workflow list when many workflows exist', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+
+  const createButton = page.getByRole('button', { name: 'Create workflow' })
+  const createDialog = page.getByRole('dialog', { name: 'Create workflow' })
+
+  for (let index = 1; index <= 18; index += 1) {
+    await createButton.click()
+    await createDialog.getByLabel('Workflow name').fill(`Workflow ${index}`)
+    await createDialog.getByRole('button', { name: 'Save workflow' }).click()
+  }
+
+  const pageOverflows = await page.evaluate(
+    () => document.documentElement.scrollHeight > window.innerHeight,
+  )
+
+  expect(pageOverflows).toBe(false)
+
+  const workflowListSection = page.locator('.workflow-list-section')
+  const workflowList = page.locator('.workflow-list')
+
+  await expect(workflowListSection).toBeVisible()
+  await expect(workflowList).toBeVisible()
+
+  const scrollMetrics = await workflowList.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }))
+
+  expect(scrollMetrics.scrollHeight).toBeGreaterThan(scrollMetrics.clientHeight)
+
+  const sectionMetrics = await workflowListSection.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }))
+
+  expect(sectionMetrics.scrollHeight).toBe(sectionMetrics.clientHeight)
+})
+
+test('keeps workflow items content-sized when the list has extra vertical space', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+
+  const createButton = page.getByRole('button', { name: 'Create workflow' })
+  const createDialog = page.getByRole('dialog', { name: 'Create workflow' })
+
+  for (const name of ['111', '222']) {
+    await createButton.click()
+    await createDialog.getByLabel('Workflow name').fill(name)
+    await createDialog.getByRole('button', { name: 'Save workflow' }).click()
+  }
+
+  const itemHeights = await page.locator('.workflow-list > li').evaluateAll((items) =>
+    items.map((item) => item.getBoundingClientRect().height),
+  )
+
+  expect(itemHeights).toHaveLength(2)
+  expect(itemHeights[0]).toBeLessThan(120)
+  expect(itemHeights[1]).toBeLessThan(120)
+})
+
 test('saves node changes and closes the drawer when clicking save', async ({ page }) => {
   await page.goto('/')
 

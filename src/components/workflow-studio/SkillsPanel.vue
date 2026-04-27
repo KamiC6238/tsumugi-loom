@@ -97,7 +97,9 @@ function toggleSkill(skillId: string) {
 <style scoped>
 .skills-panel {
   display: grid;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
   gap: 1.35rem;
   align-content: start;
   padding: 1.75rem;
@@ -105,6 +107,7 @@ function toggleSkill(skillId: string) {
   border-radius: 1.75rem;
   box-shadow: var(--shadow-soft);
   background: linear-gradient(180deg, rgba(255, 250, 243, 0.94), rgba(249, 243, 234, 0.99));
+  overflow: auto;
 }
 
 .skills-header {

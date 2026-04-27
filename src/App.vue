@@ -61,16 +61,24 @@ const {
 .workflow-shell {
   display: grid;
   grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
-  min-height: 100svh;
+  height: 100svh;
   gap: 1.5rem;
   padding: 1.5rem;
+  overflow: hidden;
+}
+
+.workflow-shell > * {
+  min-height: 0;
 }
 
 @media (max-width: 900px) {
   .workflow-shell {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100svh;
     gap: 1rem;
     padding: 1rem;
+    overflow: visible;
   }
 }
 </style>
