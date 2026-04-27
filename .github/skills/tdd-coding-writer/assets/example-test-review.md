@@ -6,7 +6,7 @@ Review Status: approved
 
 ## Scope Reviewed
 
-1. tests/ui/homepage.spec.ts
+1. tests/logic/workflow-state.test.ts
 
 ## Findings
 
@@ -22,4 +22,4 @@ Review Status: approved
 
 ## Resolution Notes
 
-本轮 Playwright 用例验证的是用户可见标题和信息块，不依赖内部实现细节；通过 reviewer 审批。
+本轮 Vitest 逻辑测试验证的是 workflow 名称归一化与 active workflow 选择规则，断言聚焦状态输入输出与失败路径；通过 reviewer 审批。

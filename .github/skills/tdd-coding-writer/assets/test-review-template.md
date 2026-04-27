@@ -2,11 +2,11 @@
 
 Workflow ID: {{WORKFLOW_ID}}
 Reviewer Agent: .github/agents/test-case-reviewer.agent.md
-Review Status: TODO: 选择 pending、changes_requested、approved 或 not_applicable
+Review Status: TODO: 选择 pending、changes_requested 或 approved
 
 ## Scope Reviewed
 
-1. TODO: 写明本轮 review 覆盖的测试文件、plan task，或当前 step 为何不适用产品级测试。
+1. TODO: 写明本轮 review 覆盖的测试文件和 plan task。
 
 ## Findings
 
@@ -22,4 +22,4 @@ Review Status: TODO: 选择 pending、changes_requested、approved 或 not_appli
 
 ## Resolution Notes
 
-TODO: 记录本轮修改、复审和结论；若为 not_applicable，明确写明跳过测试的原因与替代验证方式。
+TODO: 记录本轮修改、复审和结论。
