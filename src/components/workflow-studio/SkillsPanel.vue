@@ -103,10 +103,10 @@ function toggleSkill(skillId: string) {
   gap: 1.35rem;
   align-content: start;
   padding: 1.75rem;
-  border: 1px solid rgba(83, 60, 37, 0.12);
+  border: 1px solid var(--panel-border);
   border-radius: 1.75rem;
   box-shadow: var(--shadow-soft);
-  background: linear-gradient(180deg, rgba(255, 250, 243, 0.94), rgba(249, 243, 234, 0.99));
+  background: var(--panel-background-simple);
   overflow: auto;
 }
 
@@ -127,7 +127,7 @@ function toggleSkill(skillId: string) {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(59, 43, 29, 0.68);
+  color: var(--text-muted);
 }
 
 .skills-title {
@@ -135,7 +135,7 @@ function toggleSkill(skillId: string) {
   font-size: clamp(2rem, 2.8vw, 2.8rem);
   font-weight: 700;
   line-height: 0.96;
-  color: #241d17;
+  color: var(--text-primary);
 }
 
 .skills-metrics {
@@ -148,21 +148,21 @@ function toggleSkill(skillId: string) {
   min-width: 5.75rem;
   padding: 0.85rem 1rem;
   border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.84);
+  background: var(--surface-card);
 }
 
 .skills-metric-label {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(74, 58, 42, 0.65);
+  color: var(--text-muted);
 }
 
 .skills-metric-value {
   margin: 0.3rem 0 0;
   font-size: 1.4rem;
   font-weight: 700;
-  color: #241d17;
+  color: var(--text-primary);
 }
 
 .skill-group {
@@ -174,7 +174,7 @@ function toggleSkill(skillId: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: rgba(58, 42, 28, 0.74);
+  color: var(--text-secondary);
 }
 
 .skill-group-heading h3 {
@@ -191,7 +191,7 @@ function toggleSkill(skillId: string) {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface-card-soft);
   font-weight: 700;
 }
 
@@ -212,9 +212,9 @@ function toggleSkill(skillId: string) {
   align-content: start;
   gap: 0.75rem;
   padding: 1rem;
-  border: 1px solid rgba(83, 60, 37, 0.12);
+  border: 1px solid var(--panel-border);
   border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface-card-soft);
 }
 
 .skill-card-header {
@@ -231,8 +231,8 @@ function toggleSkill(skillId: string) {
   min-height: 1.7rem;
   padding: 0 0.55rem;
   border-radius: 999px;
-  background: rgba(208, 122, 44, 0.16);
-  color: #5a3218;
+  background: var(--accent-warm-soft);
+  color: var(--accent-warm-text);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -240,13 +240,13 @@ function toggleSkill(skillId: string) {
 }
 
 .skill-kind--node {
-  background: rgba(63, 108, 98, 0.16);
-  color: #244d43;
+  background: var(--accent-cool-soft);
+  color: var(--accent-cool-text);
 }
 
 .skill-name {
   min-width: 0;
-  color: #241d17;
+  color: var(--text-primary);
   font-size: 1.05rem;
   font-weight: 800;
   line-height: 1.25;
@@ -255,7 +255,7 @@ function toggleSkill(skillId: string) {
 
 .skill-description {
   min-width: 0;
-  color: rgba(54, 40, 28, 0.76);
+  color: var(--text-secondary);
   font-size: 0.92rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -264,7 +264,7 @@ function toggleSkill(skillId: string) {
 .skill-path {
   min-width: 0;
   align-self: end;
-  color: rgba(58, 42, 28, 0.56);
+  color: var(--text-subtle);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.75rem;
   overflow-wrap: anywhere;

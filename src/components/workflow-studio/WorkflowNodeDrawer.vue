@@ -193,14 +193,12 @@ onUnmounted(() => {
 <style scoped>
 .drawer-panel {
   min-height: 100svh;
-  border-left: 1px solid rgba(83, 60, 37, 0.12);
+  border-left: 1px solid var(--panel-border);
   border-top-left-radius: 1.5rem;
   border-bottom-left-radius: 1.5rem;
   box-shadow: var(--shadow-soft);
   overflow: hidden;
-  background:
-    radial-gradient(circle at top right, rgba(63, 108, 98, 0.14), transparent 24%),
-    linear-gradient(180deg, rgba(255, 250, 243, 0.94), rgba(249, 243, 234, 0.99));
+  background: var(--panel-background-cool);
 }
 
 .node-drawer {
@@ -218,7 +216,7 @@ onUnmounted(() => {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(59, 43, 29, 0.68);
+  color: var(--text-muted);
 }
 
 .drawer-header {
@@ -232,14 +230,14 @@ onUnmounted(() => {
   font-size: clamp(2rem, 2.5vw, 2.5rem);
   font-weight: 700;
   line-height: 0.96;
-  color: #241d17;
+  color: var(--text-primary);
 }
 
 .drawer-copy {
   max-width: 24rem;
   font-size: 1rem;
   line-height: 1.6;
-  color: rgba(54, 40, 28, 0.78);
+  color: var(--text-secondary);
 }
 
 .drawer-form {
@@ -256,19 +254,19 @@ onUnmounted(() => {
 .drawer-label {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #3e2e20;
+  color: var(--text-primary);
 }
 
 .node-name-input {
   min-height: 3.25rem;
-  border-color: rgba(84, 64, 45, 0.2);
-  background: rgba(255, 250, 243, 0.86);
+  border-color: var(--field-border);
+  background: var(--field-background);
 }
 
 .node-skill-select {
   min-height: 3.25rem;
-  border-color: rgba(84, 64, 45, 0.2);
-  background-color: rgba(255, 250, 243, 0.86);
+  border-color: var(--field-border);
+  background-color: var(--field-background);
 }
 
 .drawer-actions {
@@ -299,8 +297,8 @@ onUnmounted(() => {
 }
 
 .save-button {
-  background: linear-gradient(135deg, #3f6c62, #8a5a52);
-  color: #fffaf3;
+  background: var(--save-cool-background);
+  color: var(--primary-action-foreground);
 }
 
 .save-button:disabled {

@@ -94,12 +94,12 @@ function saveWorkflow() {
 <style scoped>
 .dialog-card {
   padding: 1.75rem;
-  border: 1px solid rgba(83, 60, 37, 0.12);
+  border: 1px solid var(--panel-border);
   border-radius: 1.5rem;
   box-shadow: var(--shadow-soft);
   background:
     radial-gradient(circle at top left, rgba(208, 122, 44, 0.15), transparent 34%),
-    #fffaf3;
+    var(--paper-strong);
 }
 
 .dialog-header,
@@ -113,7 +113,7 @@ function saveWorkflow() {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(59, 43, 29, 0.68);
+  color: var(--text-muted);
 }
 
 .dialog-header {
@@ -127,14 +127,14 @@ function saveWorkflow() {
   font-size: clamp(2rem, 2.8vw, 2.8rem);
   font-weight: 700;
   line-height: 0.96;
-  color: #241d17;
+  color: var(--text-primary);
 }
 
 .dialog-copy {
   max-width: 28rem;
   font-size: 1rem;
   line-height: 1.6;
-  color: rgba(54, 40, 28, 0.78);
+  color: var(--text-secondary);
 }
 
 .dialog-form {
@@ -151,13 +151,13 @@ function saveWorkflow() {
 .dialog-label {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #3e2e20;
+  color: var(--text-primary);
 }
 
 .workflow-name-input {
   min-height: 3.25rem;
-  border-color: rgba(84, 64, 45, 0.2);
-  background: rgba(255, 255, 255, 0.86);
+  border-color: var(--field-border);
+  background: var(--field-background);
 }
 
 .dialog-actions {
@@ -188,8 +188,8 @@ function saveWorkflow() {
 }
 
 .save-button {
-  background: linear-gradient(135deg, #d07a2c, #8a5a52);
-  color: #fffaf3;
+  background: var(--save-warm-background);
+  color: var(--primary-action-foreground);
 }
 
 .save-button:disabled {

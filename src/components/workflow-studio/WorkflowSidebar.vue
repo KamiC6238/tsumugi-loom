@@ -2,6 +2,7 @@
 import { SparklesIcon } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'
+import ThemeModeToggle from '@/components/workflow-studio/ThemeModeToggle.vue'
 import type { WorkflowStudioPanel } from '@/composables/useWorkflowStudio'
 import type { WorkflowRecord } from '@/lib/workflows'
 
@@ -25,7 +26,10 @@ function selectWorkflow(workflowId: string) {
 <template>
   <aside class="workflow-sidebar">
     <div class="brand-block">
-      <p class="eyebrow">Tsumugi Loom</p>
+      <div class="brand-eyebrow-row" data-testid="brand-theme-row">
+        <p class="eyebrow">Tsumugi Loom</p>
+        <ThemeModeToggle />
+      </div>
       <h1 class="brand-title">Workflow studio</h1>
     </div>
 
@@ -87,12 +91,10 @@ function selectWorkflow(workflowId: string) {
   flex-direction: column;
   gap: 1.5rem;
   padding: 1.75rem;
-  border: 1px solid rgba(83, 60, 37, 0.12);
+  border: 1px solid var(--panel-border);
   border-radius: 1.75rem;
   box-shadow: var(--shadow-soft);
-  background:
-    radial-gradient(circle at top left, rgba(208, 122, 44, 0.24), transparent 34%),
-    linear-gradient(180deg, rgba(255, 250, 243, 0.95), rgba(244, 236, 223, 0.92));
+  background: var(--panel-background);
   overflow: hidden;
 }
 
@@ -109,7 +111,7 @@ function selectWorkflow(workflowId: string) {
   width: 14rem;
   aspect-ratio: 1;
   border-radius: 999px;
-  background: rgba(63, 108, 98, 0.12);
+  background: var(--accent-cool-soft);
   filter: blur(6px);
 }
 
@@ -118,7 +120,13 @@ function selectWorkflow(workflowId: string) {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(59, 43, 29, 0.68);
+  color: var(--text-muted);
+}
+
+.brand-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
 }
 
 .brand-block {
@@ -131,7 +139,7 @@ function selectWorkflow(workflowId: string) {
   font-size: clamp(2rem, 3vw, 3.1rem);
   font-weight: 700;
   line-height: 0.96;
-  color: #241d17;
+  color: var(--text-primary);
 }
 
 .create-button,
@@ -150,25 +158,25 @@ function selectWorkflow(workflowId: string) {
   min-height: 3.5rem;
   padding: 0.95rem 1.2rem;
   border-radius: 1rem;
-  background: linear-gradient(135deg, #241d17, #4e3522);
-  color: #fffaf3;
+  background: var(--primary-action-background);
+  color: var(--primary-action-foreground);
   font-weight: 700;
-  box-shadow: 0 14px 28px rgba(36, 29, 23, 0.2);
+  box-shadow: var(--primary-action-shadow);
 }
 
 .skills-button {
   min-height: 3rem;
   gap: 0.55rem;
-  border: 1px solid rgba(83, 60, 37, 0.14);
+  border: 1px solid var(--panel-border);
   border-radius: 0.95rem;
-  background: rgba(255, 255, 255, 0.68);
-  color: #2f241b;
+  background: var(--surface-card-soft);
+  color: var(--text-primary);
   font-weight: 800;
 }
 
 .skills-button--active {
-  background: rgba(36, 29, 23, 0.94);
-  color: #fff9f0;
+  background: var(--active-background);
+  color: var(--active-foreground);
   box-shadow: 0 16px 26px rgba(36, 29, 23, 0.16);
 }
 
@@ -191,7 +199,7 @@ function selectWorkflow(workflowId: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: rgba(58, 42, 28, 0.74);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -209,7 +217,7 @@ function selectWorkflow(workflowId: string) {
   min-height: 2rem;
   padding: 0 0.5rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface-card-soft);
   font-weight: 700;
 }
 
@@ -234,18 +242,18 @@ function selectWorkflow(workflowId: string) {
   gap: 0.85rem;
   padding: 0.95rem 1rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--surface-card-soft);
   text-align: left;
 }
 
 .workflow-item--active {
-  background: rgba(36, 29, 23, 0.94);
-  color: #fff9f0;
+  background: var(--active-background);
+  color: var(--active-foreground);
   box-shadow: 0 16px 26px rgba(36, 29, 23, 0.16);
 }
 
 .workflow-item[data-state='open'] {
-  background: rgba(36, 29, 23, 0.94);
+  background: var(--active-background);
 }
 
 .workflow-item__swatch {
@@ -272,8 +280,8 @@ function selectWorkflow(workflowId: string) {
 .sidebar-empty {
   padding: 1.1rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.56);
-  color: rgba(58, 42, 28, 0.8);
+  background: var(--surface-card-muted);
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 </style>

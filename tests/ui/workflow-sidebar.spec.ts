@@ -354,6 +354,30 @@ test('shows added node skills in the node drawer select', async ({ page }) => {
   await expect(nodeDrawer).not.toBeVisible()
 })
 
+test('switches from the skills panel to the selected workflow from the sidebar', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByRole('button', { name: 'Create workflow' }).click()
+
+  const createDialog = page.getByRole('dialog', { name: 'Create workflow' })
+
+  await createDialog.getByLabel('Workflow name').fill('Orders Intake')
+  await createDialog.getByRole('button', { name: 'Save workflow' }).click()
+
+  const workflowButton = page.getByRole('button', { name: 'Orders Intake' })
+
+  await page.getByTestId('open-skills-panel').click()
+
+  await expect(page.getByTestId('skills-panel')).toBeVisible()
+
+  await workflowButton.click()
+
+  const detailPanel = page.getByTestId('workflow-detail')
+
+  await expect(page.getByTestId('skills-panel')).not.toBeVisible()
+  await expect(detailPanel.getByRole('heading', { name: 'Orders Intake' })).toBeVisible()
+})
+
 test('keeps skill card text contained inside cards across viewports', async ({ page }) => {
   async function expectSkillCardsToContainText() {
     await page.goto('/')

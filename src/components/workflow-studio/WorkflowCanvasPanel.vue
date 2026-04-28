@@ -81,12 +81,10 @@ function handleNodeClick({ node }: NodeMouseEvent) {
   height: 100%;
   gap: 1.5rem;
   padding: 1.75rem;
-  border: 1px solid rgba(83, 60, 37, 0.12);
+  border: 1px solid var(--panel-border);
   border-radius: 1.75rem;
   box-shadow: var(--shadow-soft);
-  background:
-    radial-gradient(circle at top right, rgba(63, 108, 98, 0.15), transparent 24%),
-    linear-gradient(180deg, rgba(255, 250, 243, 0.92), rgba(249, 243, 234, 0.98));
+  background: var(--panel-background-cool);
   overflow: hidden;
 }
 
@@ -95,7 +93,7 @@ function handleNodeClick({ node }: NodeMouseEvent) {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(59, 43, 29, 0.68);
+  color: var(--text-muted);
 }
 
 .detail-header {
@@ -107,6 +105,7 @@ function handleNodeClick({ node }: NodeMouseEvent) {
 
 .detail-heading {
   display: grid;
+  min-width: 0;
   gap: 0.75rem;
 }
 
@@ -116,7 +115,7 @@ function handleNodeClick({ node }: NodeMouseEvent) {
   font-size: clamp(2rem, 2.8vw, 2.8rem);
   font-weight: 700;
   line-height: 0.96;
-  color: #241d17;
+  color: var(--text-primary);
 }
 
 .detail-copy,
@@ -124,7 +123,7 @@ function handleNodeClick({ node }: NodeMouseEvent) {
   max-width: 34rem;
   font-size: 1rem;
   line-height: 1.6;
-  color: rgba(54, 40, 28, 0.78);
+  color: var(--text-secondary);
 }
 
 .detail-metrics {
@@ -137,21 +136,21 @@ function handleNodeClick({ node }: NodeMouseEvent) {
   min-width: 5.75rem;
   padding: 0.85rem 1rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.84);
+  background: var(--surface-card);
 }
 
 .detail-metric-label {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(74, 58, 42, 0.65);
+  color: var(--text-muted);
 }
 
 .detail-metric-value {
   margin: 0.3rem 0 0;
   font-size: 1.4rem;
   font-weight: 700;
-  color: #241d17;
+  color: var(--text-primary);
 }
 
 .canvas-frame,
@@ -159,7 +158,7 @@ function handleNodeClick({ node }: NodeMouseEvent) {
   min-height: 0;
   height: 100%;
   border-radius: 1.5rem;
-  background: rgba(255, 252, 247, 0.88);
+  background: var(--surface-card-strong);
 }
 
 .canvas-frame {
@@ -178,7 +177,28 @@ function handleNodeClick({ node }: NodeMouseEvent) {
   justify-items: start;
   gap: 0.9rem;
   padding: clamp(2rem, 6vw, 4rem);
-  border: 1px dashed rgba(73, 55, 39, 0.2);
+  border: 1px dashed var(--panel-border);
+}
+
+.canvas-surface :deep(.vue-flow__node) {
+  border-color: var(--panel-border);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+.canvas-surface :deep(.vue-flow__edge-path) {
+  stroke: var(--text-subtle);
+}
+
+.canvas-surface :deep(.vue-flow__controls) {
+  box-shadow: var(--shadow-soft);
+}
+
+.canvas-surface :deep(.vue-flow__controls-button) {
+  border-color: var(--panel-border);
+  background: var(--surface-card);
+  color: var(--text-primary);
 }
 
 @media (max-width: 900px) {

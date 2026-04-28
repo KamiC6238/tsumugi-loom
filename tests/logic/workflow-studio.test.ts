@@ -92,6 +92,21 @@ describe('workflow studio skills state', () => {
     expect(studio.isNodeDrawerOpen.value).toBe(false)
   })
 
+  it('switches back to the workflow panel when selecting the active workflow from skills', () => {
+    const studio = useWorkflowStudio()
+
+    studio.createWorkflow('Order Intake')
+    const workflowId = studio.activeWorkflowId.value as string
+
+    studio.openSkillsPanel()
+    expect(studio.activePanel.value).toBe('skills')
+
+    studio.activateWorkflow(workflowId)
+
+    expect(studio.activePanel.value).toBe('workflow')
+    expect(studio.activeWorkflow.value?.name).toBe('Order Intake')
+  })
+
   it('saves a selected node skill only when it is an added node skill', () => {
     const studio = useWorkflowStudio()
 

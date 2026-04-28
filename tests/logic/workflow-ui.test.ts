@@ -5,6 +5,7 @@ import { createPinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 
 import App from '../../src/App.vue'
+import DrawerFooter from '../../src/components/ui/drawer/DrawerFooter.vue'
 import SkillsPanel from '../../src/components/workflow-studio/SkillsPanel.vue'
 import WorkflowNodeDrawer from '../../src/components/workflow-studio/WorkflowNodeDrawer.vue'
 import WorkflowSidebar from '../../src/components/workflow-studio/WorkflowSidebar.vue'
@@ -75,6 +76,18 @@ describe('workflow studio UI wiring', () => {
     await skillsButton.trigger('click')
 
     expect(wrapper.emitted('openSkills')).toHaveLength(1)
+  })
+
+  it('keeps drawer footer horizontal padding at zero', () => {
+    const wrapper = mount(DrawerFooter, {
+      slots: {
+        default: '<button>Save</button>',
+      },
+    })
+
+    expect(wrapper.classes()).toContain('px-0')
+    expect(wrapper.classes()).toContain('py-4')
+    expect(wrapper.classes()).not.toContain('p-4')
   })
 
   it('renders the skills panel in the right layout after the sidebar entry is clicked', async () => {

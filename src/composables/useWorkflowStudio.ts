@@ -3,16 +3,10 @@ import { storeToRefs } from 'pinia'
 import { computed, shallowRef } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 
+import { useWorkflow } from '@/composables/useWorkflow'
 import { skillCatalog } from '@/lib/skills'
 import type { SkillCatalogItem } from '@/lib/skills'
-import {
-  appendWorkflow,
-  createEmptyWorkflowState,
-  getActiveWorkflow,
-  selectWorkflow,
-  updateWorkflowNode,
-} from '@/lib/workflows'
-import type { WorkflowRecord, WorkflowState } from '@/lib/workflows'
+import type { WorkflowRecord } from '@/lib/workflows'
 import { useSkillsStore } from '@/stores/skills'
 
 export interface SelectedNodeSavePayload {
@@ -24,9 +18,9 @@ export type WorkflowStudioPanel = 'workflow' | 'skills'
 
 export interface WorkflowStudioApi {
   skills: SkillCatalogItem[]
-  workflows: ComputedRef<WorkflowRecord[]>
-  activeWorkflowId: ComputedRef<string | null>
-  activeWorkflow: ComputedRef<WorkflowRecord | null>
+  workflows: Ref<WorkflowRecord[]>
+  activeWorkflowId: Ref<string | null>
+  activeWorkflow: Ref<WorkflowRecord | null>
   activePanel: Ref<WorkflowStudioPanel>
   selectedNode: ComputedRef<Node | null>
   addedSkillIds: Ref<string[]>
@@ -53,22 +47,17 @@ export interface WorkflowStudioApi {
 export function useWorkflowStudio(): WorkflowStudioApi {
   const skillsStore = useSkillsStore()
   const { addedSkillIds, addedSkills, addedNodeSkills } = storeToRefs(skillsStore)
-  const workflowState = shallowRef<WorkflowState>(createEmptyWorkflowState())
+  const workflow = useWorkflow()
   const activePanel = shallowRef<WorkflowStudioPanel>('workflow')
   const isCreateDialogOpen = shallowRef(false)
   const selectedNodeId = shallowRef<string | null>(null)
 
-  const workflows = computed(() => workflowState.value.workflows)
-  const activeWorkflowId = computed(() => workflowState.value.activeWorkflowId)
-  const activeWorkflow = computed<WorkflowRecord | null>(() =>
-    getActiveWorkflow(workflowState.value),
-  )
   const selectedNode = computed<Node | null>(() => {
-    if (!activeWorkflow.value || !selectedNodeId.value) {
+    if (!selectedNodeId.value) {
       return null
     }
 
-    return activeWorkflow.value.nodes.find((node) => node.id === selectedNodeId.value) ?? null
+    return workflow.getNode(selectedNodeId.value)
   })
   const isNodeDrawerOpen = computed(() => selectedNode.value !== null)
   const isSkillsPanelActive = computed(() => activePanel.value === 'skills')
@@ -91,36 +80,34 @@ export function useWorkflowStudio(): WorkflowStudioApi {
   }
 
   function createWorkflow(name: string) {
-    const nextState = appendWorkflow(workflowState.value, name)
+    const wasCreated = workflow.createWorkflow(name)
 
-    if (nextState === workflowState.value) {
+    if (!wasCreated) {
       return
     }
 
-    workflowState.value = nextState
     openWorkflowPanel()
     closeNodeDrawer()
     closeCreateDialog()
   }
 
   function activateWorkflow(workflowId: string) {
-    const nextState = selectWorkflow(workflowState.value, workflowId)
+    const wasSelected = workflow.selectWorkflow(workflowId)
 
-    if (nextState === workflowState.value) {
+    if (!wasSelected) {
       return
     }
 
-    workflowState.value = nextState
     openWorkflowPanel()
     closeNodeDrawer()
   }
 
   function openNodeDrawer(nodeId: string) {
-    if (!activeWorkflow.value) {
+    if (!workflow.activeWorkflow.value) {
       return
     }
 
-    const nodeExists = activeWorkflow.value.nodes.some((node) => node.id === nodeId)
+    const nodeExists = workflow.activeWorkflow.value.nodes.some((node) => node.id === nodeId)
 
     if (!nodeExists) {
       return
@@ -144,25 +131,18 @@ export function useWorkflowStudio(): WorkflowStudioApi {
   }
 
   function saveSelectedNode(payload: SelectedNodeSavePayload) {
-    if (!activeWorkflowId.value || !selectedNodeId.value) {
+    if (!workflow.activeWorkflowId.value || !selectedNodeId.value) {
       return
     }
 
-    const nextState = updateWorkflowNode(
-      workflowState.value,
-      activeWorkflowId.value,
+    workflow.updateWorkflowNode(
+      workflow.activeWorkflowId.value,
       selectedNodeId.value,
       {
         name: payload.name,
         skillId: getAllowedNodeSkillId(payload.skillId),
       },
     )
-
-    if (nextState === workflowState.value) {
-      return
-    }
-
-    workflowState.value = nextState
   }
 
   function getAllowedNodeSkillId(skillId: string | null | undefined) {
@@ -187,9 +167,9 @@ export function useWorkflowStudio(): WorkflowStudioApi {
 
   return {
     skills: skillCatalog,
-    workflows,
-    activeWorkflowId,
-    activeWorkflow,
+    workflows: workflow.workflows,
+    activeWorkflowId: workflow.activeWorkflowId,
+    activeWorkflow: workflow.activeWorkflow,
     activePanel,
     selectedNode,
     addedSkillIds,

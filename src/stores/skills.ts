@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { computed, shallowRef } from 'vue'
 
 import {
   getAddedNodeSkills,
@@ -7,34 +8,30 @@ import {
   toggleSkillId,
 } from '@/lib/skills'
 
-interface SkillsState {
-  addedSkillIds: string[]
-}
+export const useSkillsStore = defineStore('skills', () => {
+  const addedSkillIds = shallowRef<string[]>([])
+  const addedSkills = computed(() => getAddedSkills(skillCatalog, addedSkillIds.value))
+  const addedNodeSkills = computed(() => getAddedNodeSkills(skillCatalog, addedSkillIds.value))
 
-export const useSkillsStore = defineStore('skills', {
-  state: (): SkillsState => ({
-    addedSkillIds: [],
-  }),
-  getters: {
-    addedSkills(state) {
-      return getAddedSkills(skillCatalog, state.addedSkillIds)
-    },
-    addedNodeSkills(state) {
-      return getAddedNodeSkills(skillCatalog, state.addedSkillIds)
-    },
-  },
-  actions: {
-    isSkillAdded(skillId: string) {
-      return this.addedSkillIds.includes(skillId)
-    },
-    toggleSkill(skillId: string) {
-      const skillExists = skillCatalog.some((skill) => skill.id === skillId)
+  function isSkillAdded(skillId: string) {
+    return addedSkillIds.value.includes(skillId)
+  }
 
-      if (!skillExists) {
-        return
-      }
+  function toggleSkill(skillId: string) {
+    const skillExists = skillCatalog.some((skill) => skill.id === skillId)
 
-      this.addedSkillIds = toggleSkillId(this.addedSkillIds, skillId)
-    },
-  },
+    if (!skillExists) {
+      return
+    }
+
+    addedSkillIds.value = toggleSkillId(addedSkillIds.value, skillId)
+  }
+
+  return {
+    addedSkillIds,
+    addedSkills,
+    addedNodeSkills,
+    isSkillAdded,
+    toggleSkill,
+  }
 })
