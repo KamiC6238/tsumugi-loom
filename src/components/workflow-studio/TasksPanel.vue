@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import {
+  ArrowLeftIcon,
   KeyRoundIcon,
   PlusIcon,
+  PlayIcon,
   RefreshCwIcon,
   RotateCcwIcon,
 } from 'lucide-vue-next'
@@ -11,7 +13,16 @@ import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { parseGithubRepositoryFromGitConfig } from '@/lib/github'
+import type { GithubIssue } from '@/lib/github'
+import type { WorkflowRecord } from '@/lib/workflows'
 import { useGithubTasksStore } from '@/stores/githubTasks'
 
 interface DirectoryHandleLike {
@@ -27,6 +38,12 @@ interface FileHandleLike {
 type DirectoryPickerWindow = Window & {
   showDirectoryPicker?: () => Promise<DirectoryHandleLike>
 }
+
+const props = withDefaults(defineProps<{
+  workflows?: WorkflowRecord[]
+}>(), {
+  workflows: () => [],
+})
 
 const githubTasksStore = useGithubTasksStore()
 const {
@@ -44,6 +61,8 @@ const {
 
 const tokenInput = shallowRef('')
 const isPickingRepository = shallowRef(false)
+const selectedIssueId = shallowRef<number | null>(null)
+const selectedWorkflowId = shallowRef<string | undefined>(undefined)
 const repositoryInput = useTemplateRef<HTMLInputElement>('repositoryInput')
 
 const repositoryTitle = computed(() => selectedRepository.value?.fullName ?? 'Tasks')
@@ -56,20 +75,62 @@ const repositorySubtitle = computed(() => {
     ? selectedRepository.value.fullName
     : `${selectedRepository.value.localName} · ${selectedRepository.value.fullName}`
 })
+const selectedIssue = computed<GithubIssue | null>(() => {
+  if (selectedIssueId.value === null) {
+    return null
+  }
+
+  return issues.value.find((issue) => issue.id === selectedIssueId.value) ?? null
+})
+const hasWorkflows = computed(() => props.workflows.length > 0)
+const workflowSelectPlaceholder = computed(() => (
+  hasWorkflows.value ? 'Select workflow' : 'No workflows created'
+))
+const canRunIssueWorkflow = computed(() => Boolean(selectedIssue.value && selectedWorkflowId.value))
 
 watch([selectedRepository, authToken], () => {
   if (!selectedRepository.value) {
+    selectedIssueId.value = null
     return
   }
 
   void githubTasksStore.refreshIssues()
 }, { immediate: true })
 
+watch([selectedIssue, status], ([issue, nextStatus]) => {
+  if (!issue && selectedIssueId.value !== null && nextStatus === 'ready') {
+    selectedIssueId.value = null
+  }
+})
+
+watch(
+  () => props.workflows.map((workflow) => workflow.id),
+  (workflowIds) => {
+    if (selectedWorkflowId.value && !workflowIds.includes(selectedWorkflowId.value)) {
+      selectedWorkflowId.value = undefined
+    }
+  },
+)
+
 function saveAuthToken() {
   const wasSaved = githubTasksStore.setAuthToken(tokenInput.value)
 
   if (wasSaved) {
     tokenInput.value = ''
+  }
+}
+
+function openIssueDetail(issueId: number) {
+  selectedIssueId.value = issueId
+}
+
+function returnToIssueList() {
+  selectedIssueId.value = null
+}
+
+function runSelectedWorkflow() {
+  if (!canRunIssueWorkflow.value) {
+    return
   }
 }
 
@@ -162,6 +223,17 @@ function formatIssueDate(value: string) {
     day: 'numeric',
   }).format(new Date(value))
 }
+
+function formatIssueDateTime(value: string) {
+  if (!value) {
+    return 'Unknown'
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
 </script>
 
 <template>
@@ -178,7 +250,11 @@ function formatIssueDate(value: string) {
       @change="handleFallbackRepositorySelection"
     >
 
-    <section v-if="!selectedRepository" class="tasks-centered-state" data-testid="tasks-no-repo">
+    <section
+      v-if="!selectedRepository"
+      class="tasks-centered-state tasks-centered-state--solo"
+      data-testid="tasks-no-repo"
+    >
       <p class="tasks-state-line">No repository selected</p>
       <Button
         type="button"
@@ -288,6 +364,92 @@ function formatIssueDate(value: string) {
         <p class="tasks-empty-copy">{{ selectedRepository.fullName }} is clear right now.</p>
       </section>
 
+      <section
+        v-else-if="selectedIssue"
+        class="issue-detail-section"
+        data-testid="issue-detail"
+        aria-labelledby="issue-detail-heading"
+      >
+        <div class="issue-detail-toolbar">
+          <Button
+            type="button"
+            variant="ghost"
+            class="issue-back-button"
+            data-testid="issue-detail-back"
+            @click="returnToIssueList"
+          >
+            <ArrowLeftIcon aria-hidden="true" />
+            <span>Back</span>
+          </Button>
+        </div>
+
+        <article class="issue-detail-card">
+          <div class="issue-detail-header">
+            <div class="issue-detail-heading">
+              <p class="issue-number">#{{ selectedIssue.number }}</p>
+              <h3 id="issue-detail-heading" class="issue-detail-title">
+                {{ selectedIssue.title }}
+              </h3>
+              <p class="issue-meta">
+                {{ selectedIssue.author }} · Updated {{ formatIssueDateTime(selectedIssue.updatedAt) }}
+              </p>
+            </div>
+
+            <span class="issue-state">{{ selectedIssue.state }}</span>
+          </div>
+
+          <dl class="issue-detail-meta">
+            <div>
+              <dt>Created</dt>
+              <dd>{{ formatIssueDateTime(selectedIssue.createdAt) }}</dd>
+            </div>
+            <div>
+              <dt>Comments</dt>
+              <dd>{{ selectedIssue.comments }}</dd>
+            </div>
+            <div>
+              <dt>Labels</dt>
+              <dd>{{ selectedIssue.labels.length ? selectedIssue.labels.join(', ') : 'None' }}</dd>
+            </div>
+          </dl>
+
+          <div class="issue-run-panel">
+            <div class="issue-run-field">
+              <Label for="issue-workflow">Workflow</Label>
+              <Select v-model="selectedWorkflowId" name="issueWorkflow" :disabled="!hasWorkflows">
+                <SelectTrigger
+                  id="issue-workflow"
+                  class="issue-workflow-select"
+                  data-testid="issue-workflow-select"
+                >
+                  <SelectValue :placeholder="workflowSelectPlaceholder" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="workflow in workflows"
+                    :key="workflow.id"
+                    :value="workflow.id"
+                    data-testid="issue-workflow-option"
+                  >
+                    {{ workflow.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="button"
+              class="issue-run-button"
+              :disabled="!canRunIssueWorkflow"
+              data-testid="issue-run-button"
+              @click="runSelectedWorkflow"
+            >
+              <PlayIcon aria-hidden="true" />
+              <span>Run</span>
+            </Button>
+          </div>
+        </article>
+      </section>
+
       <section v-else class="tasks-list-section" aria-labelledby="github-issues-heading">
         <div class="tasks-list-heading">
           <h3 id="github-issues-heading">Open issues</h3>
@@ -295,15 +457,22 @@ function formatIssueDate(value: string) {
         </div>
 
         <ul class="issue-grid">
-          <li v-for="issue in issues" :key="issue.id" class="issue-card">
-            <div class="issue-card-header">
-              <span class="issue-number">#{{ issue.number }}</span>
-              <span class="issue-date">Updated {{ formatIssueDate(issue.updatedAt) }}</span>
-            </div>
-            <a class="issue-title" :href="issue.url" target="_blank" rel="noreferrer">
-              {{ issue.title }}
-            </a>
-            <p class="issue-meta">{{ issue.author }}</p>
+          <li v-for="issue in issues" :key="issue.id">
+            <button
+              type="button"
+              class="issue-card"
+              :aria-label="`Open issue #${issue.number} details`"
+              @click="openIssueDetail(issue.id)"
+            >
+              <span class="issue-card-header">
+                <span class="issue-number">#{{ issue.number }}</span>
+                <span class="issue-date">Updated {{ formatIssueDate(issue.updatedAt) }}</span>
+              </span>
+              <span class="issue-title">
+                {{ issue.title }}
+              </span>
+              <span class="issue-meta">{{ issue.author }}</span>
+            </button>
           </li>
         </ul>
       </section>
@@ -413,7 +582,6 @@ function formatIssueDate(value: string) {
 .tasks-centered-state,
 .tasks-auth-state {
   display: grid;
-  grid-row: 1 / -1;
   min-height: 0;
   align-content: center;
   justify-items: center;
@@ -425,8 +593,11 @@ function formatIssueDate(value: string) {
   text-align: center;
 }
 
+.tasks-centered-state--solo {
+  grid-row: 1 / -1;
+}
+
 .tasks-auth-state {
-  grid-row: auto;
   max-width: 34rem;
   justify-self: center;
   align-self: center;
@@ -490,12 +661,17 @@ function formatIssueDate(value: string) {
   text-align: left;
 }
 
-.tasks-list-section {
+.tasks-list-section,
+.issue-detail-section {
   display: grid;
   grid-template-rows: auto auto;
   min-height: 0;
   align-content: start;
   gap: 0.75rem;
+}
+
+.issue-detail-section {
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .tasks-list-heading {
@@ -540,6 +716,7 @@ function formatIssueDate(value: string) {
 .issue-card {
   display: grid;
   min-width: 0;
+  width: 100%;
   height: max-content;
   align-self: start;
   align-content: start;
@@ -548,6 +725,25 @@ function formatIssueDate(value: string) {
   border: 1px solid var(--panel-border);
   border-radius: 0.5rem;
   background: var(--surface-card-soft);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.issue-card:hover,
+.issue-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--field-border);
+  background: var(--surface-card);
+}
+
+.issue-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent-cool-text) 34%, transparent);
+  outline-offset: 2px;
 }
 
 .issue-card-header {
@@ -579,8 +775,133 @@ function formatIssueDate(value: string) {
   text-decoration: none;
 }
 
-.issue-title:hover {
-  text-decoration: underline;
+.issue-detail-toolbar {
+  display: flex;
+  justify-content: start;
+}
+
+.issue-back-button,
+.issue-run-button {
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  font-weight: 800;
+}
+
+.issue-back-button {
+  color: var(--text-secondary);
+}
+
+.issue-back-button svg,
+.issue-run-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.issue-detail-card {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 1rem;
+  overflow: auto;
+}
+
+.issue-detail-header,
+.issue-run-panel {
+  display: flex;
+  min-width: 0;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.5rem;
+  background: var(--surface-card-soft);
+}
+
+.issue-detail-heading {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
+.issue-detail-title {
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  font-weight: 900;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.issue-state {
+  display: inline-flex;
+  min-height: 1.8rem;
+  align-items: center;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  background: var(--accent-cool-soft);
+  color: var(--accent-cool-text);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.issue-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.issue-detail-meta div {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.5rem;
+  background: var(--surface-card-muted);
+}
+
+.issue-detail-meta dt {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.issue-detail-meta dd {
+  min-width: 0;
+  margin: 0.35rem 0 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.issue-run-panel {
+  align-items: end;
+}
+
+.issue-run-field {
+  display: grid;
+  min-width: min(100%, 18rem);
+  gap: 0.55rem;
+}
+
+.issue-workflow-select {
+  min-height: 3rem;
+  border-color: var(--field-border);
+  background-color: var(--field-background);
+}
+
+.issue-run-button {
+  min-height: 3rem;
+  padding-inline: 1rem;
+  border: none;
+  background: var(--primary-action-background);
+  color: var(--primary-action-foreground);
+  box-shadow: var(--primary-action-shadow);
 }
 
 @media (max-width: 900px) {
@@ -598,6 +919,16 @@ function formatIssueDate(value: string) {
   .tasks-actions {
     width: 100%;
     justify-content: start;
+  }
+
+  .issue-detail-header,
+  .issue-run-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .issue-detail-meta {
+    grid-template-columns: 1fr;
   }
 }
 </style>

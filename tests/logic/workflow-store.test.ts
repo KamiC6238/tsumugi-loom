@@ -40,5 +40,34 @@ describe('workflow store', () => {
       label: 'Brief',
       skillId: 'vue',
     })
+    expect(workflow.activeWorkflow.value?.nodeConfigs[nodeId]).toEqual({
+      name: 'Brief',
+      skillId: 'vue',
+    })
+  })
+
+  it('keeps node skill config available after switching workflows', () => {
+    const workflow = useWorkflow()
+
+    workflow.createWorkflow('Orders Intake')
+
+    const ordersWorkflowId = workflow.activeWorkflowId.value as string
+    const ordersReviewNodeId = workflow.activeWorkflow.value?.nodes[1]?.id as string
+
+    workflow.updateWorkflowNode(ordersWorkflowId, ordersReviewNodeId, {
+      name: 'Orders Intake review',
+      skillId: 'git-commit-push',
+    })
+    workflow.createWorkflow('Approval Loop')
+    workflow.selectWorkflow(ordersWorkflowId)
+
+    expect(workflow.activeWorkflow.value?.nodeConfigs[ordersReviewNodeId]).toEqual({
+      name: 'Orders Intake review',
+      skillId: 'git-commit-push',
+    })
+    expect(workflow.getNode(ordersReviewNodeId)?.data).toMatchObject({
+      label: 'Orders Intake review',
+      skillId: 'git-commit-push',
+    })
   })
 })

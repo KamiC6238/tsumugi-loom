@@ -6,12 +6,14 @@ import { describe, expect, it, vi } from 'vitest'
 
 import App from '../../src/App.vue'
 import DrawerFooter from '../../src/components/ui/drawer/DrawerFooter.vue'
+import { Select, SelectItem } from '../../src/components/ui/select'
 import SkillsPanel from '../../src/components/workflow-studio/SkillsPanel.vue'
 import TasksPanel from '../../src/components/workflow-studio/TasksPanel.vue'
 import WorkflowNodeDrawer from '../../src/components/workflow-studio/WorkflowNodeDrawer.vue'
 import WorkflowSidebar from '../../src/components/workflow-studio/WorkflowSidebar.vue'
 import type { SkillCatalogItem } from '../../src/lib/skills'
 import type { GithubRepository } from '../../src/lib/github'
+import type { WorkflowRecord } from '../../src/lib/workflows'
 import { useGithubTasksStore } from '../../src/stores/githubTasks'
 
 const macroSkill: SkillCatalogItem = {
@@ -43,6 +45,25 @@ const repository: GithubRepository = {
   remoteUrl: 'git@github.com:KamiC6238/Tsumugi.git',
   localName: 'Tsumugi',
 }
+
+const workflows: WorkflowRecord[] = [
+  {
+    id: 'workflow-1',
+    name: 'Bugfix Flow',
+    accent: '#3f6c62',
+    nodes: [],
+    edges: [],
+    nodeConfigs: {},
+  },
+  {
+    id: 'workflow-2',
+    name: 'Release Flow',
+    accent: '#d07a2c',
+    nodes: [],
+    edges: [],
+    nodeConfigs: {},
+  },
+]
 
 describe('workflow studio UI wiring', () => {
   it('renders real skill cards by kind and emits switch toggles from SkillsPanel', async () => {
@@ -254,6 +275,88 @@ describe('workflow studio UI wiring', () => {
     }
   })
 
+  it('keeps the loading state below the repository header', async () => {
+    window.localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)))
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      await flushPromises()
+
+      expect(wrapper.get('.tasks-header').text()).toContain(repository.fullName)
+      expect(wrapper.get('[data-testid="tasks-loading"]').classes())
+        .not.toContain('tasks-centered-state--solo')
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('opens issue details locally and returns to the issue card list', async () => {
+    window.localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => (
+      new Response(JSON.stringify([
+        {
+          id: 21,
+          number: 4,
+          title: '新增一篇博客',
+          state: 'open',
+          html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+          user: { login: 'KamiC6238' },
+          labels: [{ name: 'documentation' }],
+          comments: 3,
+          created_at: '2026-04-15T00:00:00Z',
+          updated_at: '2026-04-16T00:00:00Z',
+        },
+      ]), { status: 200 })
+    )))
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows },
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      await flushPromises()
+
+      await wrapper.get('.issue-card').trigger('click')
+
+      expect(wrapper.find('[data-testid="issue-detail"]').exists()).toBe(true)
+      expect(wrapper.find('.issue-grid').exists()).toBe(false)
+      expect(wrapper.text()).toContain('Comments')
+      expect(wrapper.findAllComponents(SelectItem).map((option) => option.text()))
+        .toEqual(['Bugfix Flow', 'Release Flow'])
+      expect(wrapper.get('[data-testid="issue-run-button"]').attributes('disabled')).toBeDefined()
+
+      await wrapper.get('[data-testid="issue-detail-back"]').trigger('click')
+
+      expect(wrapper.find('[data-testid="issue-detail"]').exists()).toBe(false)
+      expect(wrapper.find('.issue-grid').exists()).toBe(true)
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
   it('passes only added node skills from App to the node drawer', async () => {
     const wrapper = mount(App, {
       global: {
@@ -330,6 +433,27 @@ describe('workflow studio UI wiring', () => {
       DrawerHeader: { template: '<div><slot /></div>' },
       DrawerTitle: { template: '<div><slot /></div>' },
     }
+    const selectStubs = {
+      Select: {
+        props: ['disabled'],
+        provide() {
+          return { selectDisabled: this.disabled }
+        },
+        template: '<div data-slot="select"><slot /></div>',
+      },
+      SelectTrigger: {
+        inject: ['selectDisabled'],
+        template: '<button type="button" v-bind="$attrs" :disabled="selectDisabled"><slot /></button>',
+      },
+      SelectValue: {
+        props: ['placeholder'],
+        template: '<span>{{ placeholder }}</span>',
+      },
+      SelectContent: { template: '<div><slot /></div>' },
+      SelectItem: {
+        template: '<div data-slot="select-item" v-bind="$attrs"><slot /></div>',
+      },
+    }
     const node = {
       id: 'workflow-1-review',
       position: { x: 0, y: 0 },
@@ -342,13 +466,13 @@ describe('workflow studio UI wiring', () => {
         node,
         addedNodeSkills: [nodeSkill],
       },
-      global: { stubs: drawerStubs },
+      global: { stubs: { ...drawerStubs, ...selectStubs } },
     })
 
     expect(populatedWrapper.get('[data-testid="node-skill-select"]').attributes('disabled'))
       .toBeUndefined()
-    expect(populatedWrapper.findAll('[data-testid="node-skill-option"]').map((option) => option.text()))
-      .toEqual(['vue'])
+    expect(populatedWrapper.findAll('[data-slot="select-item"]').map((option) => option.text()))
+      .toEqual(['No node skill', 'vue'])
     expect(populatedWrapper.text()).not.toContain('start-standard-workflow')
 
     const emptyWrapper = mount(WorkflowNodeDrawer, {
@@ -357,7 +481,7 @@ describe('workflow studio UI wiring', () => {
         node,
         addedNodeSkills: [],
       },
-      global: { stubs: drawerStubs },
+      global: { stubs: { ...drawerStubs, ...selectStubs } },
     })
 
     expect(emptyWrapper.get('[data-testid="node-skill-select"]').attributes('disabled')).toBe('')
@@ -389,7 +513,7 @@ describe('workflow studio UI wiring', () => {
       },
     })
 
-    await wrapper.get('[data-testid="node-skill-select"]').setValue('vue')
+    wrapper.getComponent(Select).vm.$emit('update:modelValue', 'vue')
     await wrapper.get('form').trigger('submit')
 
     expect(wrapper.emitted('save')?.[0]).toEqual([

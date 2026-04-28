@@ -6,11 +6,17 @@ export interface WorkflowRecord {
   accent: string
   nodes: Node[]
   edges: Edge[]
+  nodeConfigs: Record<string, WorkflowNodeConfig>
 }
 
 export interface WorkflowState {
   workflows: WorkflowRecord[]
   activeWorkflowId: string | null
+}
+
+export interface WorkflowNodeConfig {
+  name: string
+  skillId: string | null
 }
 
 export interface WorkflowNodeUpdate {
@@ -92,36 +98,31 @@ export function updateWorkflowNode(
   }
 
   const currentNode = workflow.nodes[nodeIndex]
-  const currentLabel = String(currentNode.data?.label ?? '')
-  const currentSkillId = getNodeSkillId(currentNode)
+  const currentConfig = getWorkflowNodeConfig(workflow, currentNode)
+  const currentLabel = currentConfig.name
+  const currentSkillId = currentConfig.skillId
   const nextSkillId = getNextSkillId(update.skillId, currentSkillId)
+  const nextConfig: WorkflowNodeConfig = {
+    name: label,
+    skillId: nextSkillId,
+  }
 
-  if (currentLabel === label && currentSkillId === nextSkillId) {
+  if (currentLabel === label && currentSkillId === nextSkillId && currentNode.id in workflow.nodeConfigs) {
     return state
-  }
-
-  const nextData: Record<string, unknown> = {
-    ...(isRecord(currentNode.data) ? currentNode.data : {}),
-    label,
-  }
-
-  if (nextSkillId) {
-    nextData.skillId = nextSkillId
-  } else {
-    delete nextData.skillId
   }
 
   const nextNodes = [...workflow.nodes]
 
-  nextNodes[nodeIndex] = {
-    ...currentNode,
-    data: nextData,
-  }
+  nextNodes[nodeIndex] = applyNodeConfig(currentNode, nextConfig)
 
   const nextWorkflows = [...state.workflows]
 
   nextWorkflows[workflowIndex] = {
     ...workflow,
+    nodeConfigs: {
+      ...workflow.nodeConfigs,
+      [currentNode.id]: nextConfig,
+    },
     nodes: nextNodes,
   }
 
@@ -133,6 +134,51 @@ export function updateWorkflowNode(
 
 export function getActiveWorkflow(state: WorkflowState): WorkflowRecord | null {
   return state.workflows.find((workflow) => workflow.id === state.activeWorkflowId) ?? null
+}
+
+export function getWorkflowNode(workflow: WorkflowRecord, nodeId: string): Node | null {
+  const node = workflow.nodes.find((workflowNode) => workflowNode.id === nodeId)
+
+  if (!node) {
+    return null
+  }
+
+  return applyNodeConfig(node, getWorkflowNodeConfig(workflow, node))
+}
+
+export function getWorkflowNodeConfig(
+  workflow: WorkflowRecord,
+  node: Node,
+): WorkflowNodeConfig {
+  const storedConfig = workflow.nodeConfigs[node.id]
+
+  if (storedConfig) {
+    return storedConfig
+  }
+
+  return {
+    name: String(node.data?.label ?? ''),
+    skillId: getNodeSkillId(node),
+  }
+}
+
+function applyNodeConfig(node: Node, config: WorkflowNodeConfig): Node {
+  const nextData: Record<string, unknown> = {
+    ...(isRecord(node.data) ? node.data : {}),
+    label: config.name,
+  }
+
+  if (config.skillId) {
+    nextData.skillId = config.skillId
+  }
+  else {
+    delete nextData.skillId
+  }
+
+  return {
+    ...node,
+    data: nextData,
+  }
 }
 
 function getNodeSkillId(node: Node): string | null {
@@ -165,30 +211,31 @@ function createWorkflowRecord(
 ): WorkflowRecord {
   const accent = WORKFLOW_ACCENTS[(workflowNumber - 1) % WORKFLOW_ACCENTS.length]
   const laneOffset = (workflowNumber - 1) * 18
+  const nodes: Node[] = [
+    {
+      id: `${workflowId}-start`,
+      type: 'input',
+      position: { x: 48, y: 64 + laneOffset },
+      data: { label: `${name} brief` },
+    },
+    {
+      id: `${workflowId}-review`,
+      position: { x: 304, y: 178 + laneOffset },
+      data: { label: `${name} review` },
+    },
+    {
+      id: `${workflowId}-release`,
+      type: 'output',
+      position: { x: 566, y: 88 + laneOffset },
+      data: { label: `${name} release` },
+    },
+  ]
 
   return {
     id: workflowId,
     name,
     accent,
-    nodes: [
-      {
-        id: `${workflowId}-start`,
-        type: 'input',
-        position: { x: 48, y: 64 + laneOffset },
-        data: { label: `${name} brief` },
-      },
-      {
-        id: `${workflowId}-review`,
-        position: { x: 304, y: 178 + laneOffset },
-        data: { label: `${name} review` },
-      },
-      {
-        id: `${workflowId}-release`,
-        type: 'output',
-        position: { x: 566, y: 88 + laneOffset },
-        data: { label: `${name} release` },
-      },
-    ],
+    nodes,
     edges: [
       {
         id: `${workflowId}-start-review`,
@@ -202,5 +249,16 @@ function createWorkflowRecord(
         target: `${workflowId}-release`,
       },
     ],
+    nodeConfigs: createNodeConfigs(nodes),
   }
+}
+
+function createNodeConfigs(nodes: Node[]): Record<string, WorkflowNodeConfig> {
+  return Object.fromEntries(nodes.map((node) => [
+    node.id,
+    {
+      name: String(node.data?.label ?? ''),
+      skillId: getNodeSkillId(node),
+    },
+  ]))
 }

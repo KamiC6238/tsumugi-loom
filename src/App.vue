@@ -49,7 +49,7 @@ const {
       :added-skill-ids="addedSkillIds"
       @toggle-skill="toggleSkill"
     />
-    <TasksPanel v-else-if="isTasksPanelActive" />
+    <TasksPanel v-else-if="isTasksPanelActive" :workflows="workflows" />
     <WorkflowCanvasPanel v-else :active-workflow="activeWorkflow" @node-click="openNodeDrawer" />
     <WorkflowNodeDrawer
       :open="isNodeDrawerOpen"

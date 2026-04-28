@@ -34,6 +34,8 @@ describe('workflow state', () => {
     expect(createdWorkflow?.edges.length).toBeGreaterThan(0)
     expect(labels).toContain('Order Intake brief')
     expect(labels).toContain('Order Intake review')
+    expect(Object.values(createdWorkflow?.nodeConfigs ?? {}).map((config) => config.name))
+      .toEqual(labels)
     expect(state.activeWorkflowId).toBe(createdWorkflow?.id)
     expect(getActiveWorkflow(state)?.name).toBe('Order Intake')
   })
@@ -169,5 +171,31 @@ describe('workflow state', () => {
       label: 'Final review',
     })
     expect(clearedNode?.data?.skillId).toBeUndefined()
+  })
+
+  it('persists node skill config on the targeted workflow after switching away and back', () => {
+    const firstPass = appendWorkflow(createEmptyWorkflowState(), 'Order Intake')
+    const targetWorkflowId = firstPass.activeWorkflowId as string
+    const secondPass = appendWorkflow(firstPass, 'Approval Loop')
+    const targetWorkflow = secondPass.workflows.find((workflow) => workflow.id === targetWorkflowId)
+    const targetNodeId = targetWorkflow?.nodes[1]?.id as string
+
+    const assigned = updateWorkflowNode(secondPass, targetWorkflowId, targetNodeId, {
+      name: 'Order Intake review',
+      skillId: 'git-commit-push',
+    })
+    const switchedAway = selectWorkflow(assigned, secondPass.activeWorkflowId as string)
+    const switchedBack = selectWorkflow(switchedAway, targetWorkflowId)
+    const restoredWorkflow = getActiveWorkflow(switchedBack)
+    const restoredNode = restoredWorkflow?.nodes.find((node) => node.id === targetNodeId)
+
+    expect(restoredWorkflow?.nodeConfigs[targetNodeId]).toEqual({
+      name: 'Order Intake review',
+      skillId: 'git-commit-push',
+    })
+    expect(restoredNode?.data).toMatchObject({
+      label: 'Order Intake review',
+      skillId: 'git-commit-push',
+    })
   })
 })

@@ -14,13 +14,21 @@ import {
 } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { SkillCatalogItem } from '@/lib/skills'
 
 interface NodeDrawerSavePayload {
   name: string
   skillId: string | null
 }
+
+const NO_NODE_SKILL_VALUE = '__no-node-skill__'
 
 const props = withDefaults(defineProps<{
   open: boolean
@@ -36,20 +44,23 @@ const emit = defineEmits<{
 }>()
 
 const draftNodeName = shallowRef('')
-const draftNodeSkillId = shallowRef('')
+const draftNodeSkillId = shallowRef<string | undefined>(undefined)
 const drawerPanelRef = useTemplateRef<HTMLElement>('drawerPanel')
 
 const selectedNodeLabel = computed(() => String(props.node?.data?.label ?? ''))
 const trimmedNodeName = computed(() => draftNodeName.value.trim())
 const canSaveNode = computed(() => trimmedNodeName.value.length > 0)
 const hasAddedNodeSkills = computed(() => props.addedNodeSkills.length > 0)
+const nodeSkillPlaceholder = computed(() => (
+  hasAddedNodeSkills.value ? 'Select node skill' : 'No node skills added'
+))
 
 watch(
   () => [props.open, props.node?.id ?? null, props.addedNodeSkills.map((skill) => skill.id).join('|')] as const,
   ([isOpen, nodeId]) => {
     if (!isOpen || !nodeId) {
       draftNodeName.value = ''
-      draftNodeSkillId.value = ''
+      draftNodeSkillId.value = undefined
       return
     }
 
@@ -79,6 +90,12 @@ function handleDocumentPointerDown(event: PointerEvent) {
     return
   }
 
+  const targetElement = target instanceof Element ? target : target.parentElement
+
+  if (targetElement?.closest('[data-slot="select-content"]')) {
+    return
+  }
+
   if (drawerPanel.contains(target)) {
     return
   }
@@ -94,19 +111,29 @@ function saveNode() {
   draftNodeName.value = trimmedNodeName.value
   emit('save', {
     name: trimmedNodeName.value,
-    skillId: draftNodeSkillId.value || null,
+    skillId: getSelectedNodeSkillId(),
   })
   closeDrawer()
+}
+
+function getSelectedNodeSkillId() {
+  if (!draftNodeSkillId.value || draftNodeSkillId.value === NO_NODE_SKILL_VALUE) {
+    return null
+  }
+
+  return draftNodeSkillId.value
 }
 
 function getAvailableNodeSkillId() {
   const nodeSkillId = props.node?.data?.skillId
 
   if (typeof nodeSkillId !== 'string') {
-    return ''
+    return hasAddedNodeSkills.value ? NO_NODE_SKILL_VALUE : undefined
   }
 
-  return props.addedNodeSkills.some((skill) => skill.id === nodeSkillId) ? nodeSkillId : ''
+  return props.addedNodeSkills.some((skill) => skill.id === nodeSkillId)
+    ? nodeSkillId
+    : hasAddedNodeSkills.value ? NO_NODE_SKILL_VALUE : undefined
 }
 
 onMounted(() => {
@@ -149,23 +176,30 @@ onUnmounted(() => {
             <div class="drawer-field">
               <Label class="drawer-label" for="node-skill">Node skill</Label>
               <Select
-                id="node-skill"
                 v-model="draftNodeSkillId"
                 name="nodeSkill"
-                class="node-skill-select"
-                data-testid="node-skill-select"
                 :disabled="!hasAddedNodeSkills"
               >
-                <option v-if="hasAddedNodeSkills" value="">No node skill</option>
-                <option v-else value="">No node skills added</option>
-                <option
-                  v-for="skill in addedNodeSkills"
-                  :key="skill.id"
-                  :value="skill.id"
-                  data-testid="node-skill-option"
+                <SelectTrigger
+                  id="node-skill"
+                  class="node-skill-select"
+                  data-testid="node-skill-select"
                 >
-                  {{ skill.name }}
-                </option>
+                  <SelectValue :placeholder="nodeSkillPlaceholder" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="NO_NODE_SKILL_VALUE">
+                    No node skill
+                  </SelectItem>
+                  <SelectItem
+                    v-for="skill in addedNodeSkills"
+                    :key="skill.id"
+                    :value="skill.id"
+                    data-testid="node-skill-option"
+                  >
+                    {{ skill.name }}
+                  </SelectItem>
+                </SelectContent>
               </Select>
             </div>
 

@@ -346,12 +346,30 @@ test('shows added node skills in the node drawer select', async ({ page }) => {
 
   await expect(nodeDrawer).toBeVisible()
   await expect(nodeSkillSelect).toBeEnabled()
-  await expect(nodeSkillSelect.locator('option')).toHaveText(['No node skill', 'git-commit-push'])
 
-  await nodeSkillSelect.selectOption('git-commit-push')
+  await nodeSkillSelect.click()
+
+  await expect(page.getByRole('option')).toHaveText(['No node skill', 'git-commit-push'])
+
+  await page.getByRole('option', { name: 'git-commit-push' }).click()
   await nodeDrawer.getByRole('button', { name: 'Save node' }).click()
 
   await expect(nodeDrawer).not.toBeVisible()
+
+  await page.getByRole('button', { name: 'Create workflow' }).click()
+  await createDialog.getByLabel('Workflow name').fill('Approval Loop')
+  await createDialog.getByRole('button', { name: 'Save workflow' }).click()
+
+  await page.getByRole('button', { name: 'Orders Intake' }).click()
+  await detailPanel.getByText('Orders Intake review').click()
+
+  await expect(nodeDrawer).toBeVisible()
+  await expect(nodeSkillSelect).toHaveText('git-commit-push')
+
+  await nodeSkillSelect.click()
+
+  await expect(page.getByRole('option', { name: 'git-commit-push' }))
+    .toHaveAttribute('aria-selected', 'true')
 })
 
 test('switches from the skills panel to the selected workflow from the sidebar', async ({ page }) => {

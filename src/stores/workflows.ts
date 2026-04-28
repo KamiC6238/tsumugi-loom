@@ -6,6 +6,7 @@ import {
   appendWorkflow,
   createEmptyWorkflowState,
   getActiveWorkflow,
+  getWorkflowNode,
   selectWorkflow as selectWorkflowInState,
   updateWorkflowNode as updateWorkflowNodeInState,
 } from '@/lib/workflows'
@@ -64,7 +65,11 @@ export const useWorkflowsStore = defineStore('workflows', () => {
   }
 
   function getNode(nodeId: string): Node | null {
-    return activeWorkflow.value?.nodes.find((node) => node.id === nodeId) ?? null
+    if (!activeWorkflow.value) {
+      return null
+    }
+
+    return getWorkflowNode(activeWorkflow.value, nodeId)
   }
 
   return {
