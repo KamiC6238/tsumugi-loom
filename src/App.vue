@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CreateWorkflowDialog from '@/components/workflow-studio/CreateWorkflowDialog.vue'
 import SkillsPanel from '@/components/workflow-studio/SkillsPanel.vue'
+import TasksPanel from '@/components/workflow-studio/TasksPanel.vue'
 import WorkflowCanvasPanel from '@/components/workflow-studio/WorkflowCanvasPanel.vue'
 import WorkflowNodeDrawer from '@/components/workflow-studio/WorkflowNodeDrawer.vue'
 import WorkflowSidebar from '@/components/workflow-studio/WorkflowSidebar.vue'
@@ -18,10 +19,12 @@ const {
   isCreateDialogOpen,
   isNodeDrawerOpen,
   isSkillsPanelActive,
+  isTasksPanelActive,
   openCreateDialog,
   createWorkflow,
   activateWorkflow,
   openSkillsPanel,
+  openTasksPanel,
   openNodeDrawer,
   setNodeDrawerOpen,
   saveSelectedNode,
@@ -37,6 +40,7 @@ const {
       :active-panel="activePanel"
       @create="openCreateDialog"
       @open-skills="openSkillsPanel"
+      @open-tasks="openTasksPanel"
       @select="activateWorkflow"
     />
     <SkillsPanel
@@ -45,6 +49,7 @@ const {
       :added-skill-ids="addedSkillIds"
       @toggle-skill="toggleSkill"
     />
+    <TasksPanel v-else-if="isTasksPanelActive" />
     <WorkflowCanvasPanel v-else :active-workflow="activeWorkflow" @node-click="openNodeDrawer" />
     <WorkflowNodeDrawer
       :open="isNodeDrawerOpen"

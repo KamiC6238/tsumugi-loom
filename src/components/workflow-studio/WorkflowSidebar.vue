@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SparklesIcon } from 'lucide-vue-next'
+import { ListTodoIcon, SparklesIcon } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'
 import ThemeModeToggle from '@/components/workflow-studio/ThemeModeToggle.vue'
@@ -15,6 +15,7 @@ defineProps<{
 const emit = defineEmits<{
   create: []
   openSkills: []
+  openTasks: []
   select: [workflowId: string]
 }>()
 
@@ -48,6 +49,19 @@ function selectWorkflow(workflowId: string) {
     >
       <SparklesIcon aria-hidden="true" />
       <span>Skills</span>
+    </Button>
+
+    <Button
+      type="button"
+      variant="outline"
+      class="tasks-button"
+      :class="{ 'tasks-button--active': activePanel === 'tasks' }"
+      :aria-pressed="activePanel === 'tasks'"
+      data-testid="open-tasks-panel"
+      @click="emit('openTasks')"
+    >
+      <ListTodoIcon aria-hidden="true" />
+      <span>Tasks</span>
     </Button>
 
     <section class="workflow-list-section" aria-label="Workflows">
@@ -126,6 +140,7 @@ function selectWorkflow(workflowId: string) {
 .brand-eyebrow-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.65rem;
 }
 
@@ -144,6 +159,7 @@ function selectWorkflow(workflowId: string) {
 
 .create-button,
 .skills-button,
+.tasks-button,
 .workflow-item {
   border: none;
   cursor: pointer;
@@ -164,7 +180,8 @@ function selectWorkflow(workflowId: string) {
   box-shadow: var(--primary-action-shadow);
 }
 
-.skills-button {
+.skills-button,
+.tasks-button {
   min-height: 3rem;
   gap: 0.55rem;
   border: 1px solid var(--panel-border);
@@ -174,7 +191,8 @@ function selectWorkflow(workflowId: string) {
   font-weight: 800;
 }
 
-.skills-button--active {
+.skills-button--active,
+.tasks-button--active {
   background: var(--active-background);
   color: var(--active-foreground);
   box-shadow: 0 16px 26px rgba(36, 29, 23, 0.16);
@@ -182,6 +200,7 @@ function selectWorkflow(workflowId: string) {
 
 .create-button:hover,
 .skills-button:hover,
+.tasks-button:hover,
 .workflow-item:hover {
   transform: translateY(-1px);
 }

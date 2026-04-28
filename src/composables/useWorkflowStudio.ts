@@ -14,7 +14,7 @@ export interface SelectedNodeSavePayload {
   skillId?: string | null
 }
 
-export type WorkflowStudioPanel = 'workflow' | 'skills'
+export type WorkflowStudioPanel = 'workflow' | 'skills' | 'tasks'
 
 export interface WorkflowStudioApi {
   skills: SkillCatalogItem[]
@@ -29,8 +29,10 @@ export interface WorkflowStudioApi {
   isCreateDialogOpen: Ref<boolean>
   isNodeDrawerOpen: ComputedRef<boolean>
   isSkillsPanelActive: ComputedRef<boolean>
+  isTasksPanelActive: ComputedRef<boolean>
   openWorkflowPanel: () => void
   openSkillsPanel: () => void
+  openTasksPanel: () => void
   openCreateDialog: () => void
   closeCreateDialog: () => void
   createWorkflow: (name: string) => void
@@ -61,6 +63,7 @@ export function useWorkflowStudio(): WorkflowStudioApi {
   })
   const isNodeDrawerOpen = computed(() => selectedNode.value !== null)
   const isSkillsPanelActive = computed(() => activePanel.value === 'skills')
+  const isTasksPanelActive = computed(() => activePanel.value === 'tasks')
 
   function openWorkflowPanel() {
     activePanel.value = 'workflow'
@@ -68,6 +71,11 @@ export function useWorkflowStudio(): WorkflowStudioApi {
 
   function openSkillsPanel() {
     activePanel.value = 'skills'
+    closeNodeDrawer()
+  }
+
+  function openTasksPanel() {
+    activePanel.value = 'tasks'
     closeNodeDrawer()
   }
 
@@ -178,8 +186,10 @@ export function useWorkflowStudio(): WorkflowStudioApi {
     isCreateDialogOpen,
     isNodeDrawerOpen,
     isSkillsPanelActive,
+    isTasksPanelActive,
     openWorkflowPanel,
     openSkillsPanel,
+    openTasksPanel,
     openCreateDialog,
     closeCreateDialog,
     createWorkflow,

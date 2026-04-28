@@ -14,16 +14,25 @@ describe('workflow studio skills state', () => {
 
     expect(studio.activePanel.value).toBe('workflow')
     expect(studio.isSkillsPanelActive.value).toBe(false)
+    expect(studio.isTasksPanelActive.value).toBe(false)
 
     studio.openSkillsPanel()
 
     expect(studio.activePanel.value).toBe('skills')
     expect(studio.isSkillsPanelActive.value).toBe(true)
+    expect(studio.isTasksPanelActive.value).toBe(false)
+
+    studio.openTasksPanel()
+
+    expect(studio.activePanel.value).toBe('tasks')
+    expect(studio.isSkillsPanelActive.value).toBe(false)
+    expect(studio.isTasksPanelActive.value).toBe(true)
 
     studio.openWorkflowPanel()
 
     expect(studio.activePanel.value).toBe('workflow')
     expect(studio.isSkillsPanelActive.value).toBe(false)
+    expect(studio.isTasksPanelActive.value).toBe(false)
   })
 
   it('derives switch checked state from global added skill ids', () => {
@@ -89,6 +98,21 @@ describe('workflow studio skills state', () => {
     studio.openSkillsPanel()
 
     expect(studio.activePanel.value).toBe('skills')
+    expect(studio.isNodeDrawerOpen.value).toBe(false)
+  })
+
+  it('closes an open node drawer when the tasks panel opens', () => {
+    const studio = useWorkflowStudio()
+
+    studio.createWorkflow('Order Intake')
+    const nodeId = studio.activeWorkflow.value?.nodes[0]?.id as string
+
+    studio.openNodeDrawer(nodeId)
+    expect(studio.isNodeDrawerOpen.value).toBe(true)
+
+    studio.openTasksPanel()
+
+    expect(studio.activePanel.value).toBe('tasks')
     expect(studio.isNodeDrawerOpen.value).toBe(false)
   })
 

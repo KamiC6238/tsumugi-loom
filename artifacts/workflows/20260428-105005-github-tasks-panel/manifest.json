@@ -1,0 +1,10 @@
+{
+  "workflowId": "20260428-105005-github-tasks-panel",
+  "slug": "github-tasks-panel",
+  "goal": "在侧栏新增 Tasks 面板并展示所选 GitHub 仓库的 issues",
+  "createdAt": "2026-04-28T10:50:05+0800",
+  "updatedAt": "2026-04-28T11:42:00+0800",
+  "currentStage": "review",
+  "completedStages": ["plan", "coding", "testing", "review"],
+  "status": "completed"
+}
