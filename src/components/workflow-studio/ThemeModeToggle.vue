@@ -30,8 +30,8 @@ const toggleLabel = computed(() =>
 
 <style scoped>
 .theme-mode-toggle {
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
   background: var(--surface-card-soft);

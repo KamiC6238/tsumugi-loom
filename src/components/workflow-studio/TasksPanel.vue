@@ -65,15 +65,6 @@ const selectedWorkflowId = shallowRef<string | undefined>(undefined)
 const repositoryInput = useTemplateRef<HTMLInputElement>('repositoryInput')
 
 const repositoryTitle = computed(() => selectedRepository.value?.fullName ?? 'Tasks')
-const repositorySubtitle = computed(() => {
-  if (!selectedRepository.value) {
-    return ''
-  }
-
-  return selectedRepository.value.localName === selectedRepository.value.fullName
-    ? selectedRepository.value.fullName
-    : `${selectedRepository.value.localName} · ${selectedRepository.value.fullName}`
-})
 const selectedIssue = computed<GithubIssue | null>(() => {
   if (selectedIssueId.value === null) {
     return null
@@ -223,16 +214,6 @@ function formatIssueDate(value: string) {
   }).format(new Date(value))
 }
 
-function formatIssueDateTime(value: string) {
-  if (!value) {
-    return 'Unknown'
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
 </script>
 
 <template>
@@ -275,7 +256,6 @@ function formatIssueDateTime(value: string) {
         <div class="tasks-heading">
           <p class="eyebrow">GitHub tasks</p>
           <h2 class="tasks-title">{{ repositoryTitle }}</h2>
-          <p class="tasks-copy">{{ repositorySubtitle }}</p>
         </div>
 
         <div class="tasks-actions">
@@ -509,13 +489,12 @@ function formatIssueDateTime(value: string) {
   min-width: 0;
   color: var(--text-primary);
   font-family: var(--font-heading);
-  font-size: clamp(2rem, 2.8vw, 2.8rem);
+  font-size: clamp(1.35rem, 1.8vw, 1.75rem);
   font-weight: 700;
-  line-height: 0.96;
+  line-height: 1.08;
   overflow-wrap: anywhere;
 }
 
-.tasks-copy,
 .tasks-empty-copy {
   max-width: 34rem;
   color: var(--text-secondary);
@@ -528,21 +507,21 @@ function formatIssueDateTime(value: string) {
   display: flex;
   flex-wrap: wrap;
   justify-content: end;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .tasks-action-button,
 .tasks-add-repo-button,
 .tasks-save-token-button {
-  gap: 0.55rem;
-  border-radius: 0.75rem;
-  font-weight: 800;
+  gap: 0.4rem;
+  border-radius: 0.65rem;
+  font-weight: 700;
 }
 
 .tasks-add-repo-button,
 .tasks-save-token-button {
-  min-height: 3rem;
-  padding-inline: 1rem;
+  min-height: 2.5rem;
+  padding-inline: 0.85rem;
   border: none;
   background: var(--primary-action-background);
   color: var(--primary-action-foreground);
@@ -558,8 +537,8 @@ function formatIssueDateTime(value: string) {
 .tasks-action-button svg,
 .tasks-add-repo-button svg,
 .tasks-save-token-button svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .tasks-centered-state,
@@ -703,8 +682,8 @@ function formatIssueDateTime(value: string) {
   height: max-content;
   align-self: start;
   align-content: start;
-  gap: 0.55rem;
-  padding: 0.9rem 1rem;
+  gap: 0.45rem;
+  padding: 0.75rem 0.85rem;
   border: 1px solid var(--panel-border);
   border-radius: 0.5rem;
   background: var(--surface-card-soft);
@@ -751,7 +730,7 @@ function formatIssueDateTime(value: string) {
 .issue-title {
   min-width: 0;
   color: var(--text-primary);
-  font-size: 1.02rem;
+  font-size: 0.95rem;
   font-weight: 800;
   line-height: 1.32;
   overflow-wrap: anywhere;
@@ -765,9 +744,9 @@ function formatIssueDateTime(value: string) {
 
 .issue-back-button,
 .issue-run-button {
-  gap: 0.5rem;
-  border-radius: 0.75rem;
-  font-weight: 800;
+  gap: 0.4rem;
+  border-radius: 0.65rem;
+  font-weight: 700;
 }
 
 .issue-back-button {
@@ -776,8 +755,8 @@ function formatIssueDateTime(value: string) {
 
 .issue-back-button svg,
 .issue-run-button svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .issue-detail-card {
@@ -794,7 +773,7 @@ function formatIssueDateTime(value: string) {
   align-items: stretch;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem;
+  padding: 0.9rem;
   border: 1px solid var(--panel-border);
   border-radius: 0.5rem;
   background: var(--surface-card-soft);
@@ -817,21 +796,21 @@ function formatIssueDateTime(value: string) {
 .issue-detail-title {
   min-width: 0;
   color: var(--text-primary);
-  font-size: clamp(1.35rem, 2vw, 2rem);
-  font-weight: 900;
-  line-height: 1.08;
+  font-size: clamp(1rem, 1.35vw, 1.25rem);
+  font-weight: 800;
+  line-height: 1.28;
   overflow-wrap: anywhere;
 }
 
 .issue-state {
   display: inline-flex;
-  min-height: 1.8rem;
+  min-height: 1.5rem;
   align-items: center;
-  padding: 0 0.65rem;
+  padding: 0 0.55rem;
   border-radius: 999px;
   background: var(--accent-cool-soft);
   color: var(--accent-cool-text);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -853,14 +832,14 @@ function formatIssueDateTime(value: string) {
 }
 
 .issue-workflow-select {
-  min-height: 3rem;
+  min-height: 2.5rem;
   border-color: var(--field-border);
   background-color: var(--field-background);
 }
 
 .issue-run-button {
-  min-height: 3rem;
-  padding-inline: 1rem;
+  min-height: 2.5rem;
+  padding-inline: 0.85rem;
   border: none;
   background: var(--primary-action-background);
   color: var(--primary-action-foreground);

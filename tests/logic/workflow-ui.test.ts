@@ -294,6 +294,7 @@ describe('workflow studio UI wiring', () => {
       await flushPromises()
 
       expect(wrapper.get('.tasks-header').text()).toContain(repository.fullName)
+      expect(wrapper.find('.tasks-copy').exists()).toBe(false)
       expect(wrapper.get('[data-testid="tasks-loading"]').classes())
         .not.toContain('tasks-centered-state--solo')
     }
@@ -344,6 +345,7 @@ describe('workflow studio UI wiring', () => {
 
       expect(wrapper.find('[data-testid="issue-detail"]').exists()).toBe(true)
       expect(wrapper.find('.issue-grid').exists()).toBe(false)
+      expect(wrapper.find('.tasks-copy').exists()).toBe(false)
       expect(detail.find('.issue-meta').exists()).toBe(false)
       expect(detail.find('.issue-detail-meta').exists()).toBe(false)
       expect(header.find('[data-testid="issue-workflow-select"]').exists()).toBe(true)

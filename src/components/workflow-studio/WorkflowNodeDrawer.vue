@@ -298,7 +298,7 @@ onUnmounted(() => {
 }
 
 .node-skill-select {
-  min-height: 3.25rem;
+  min-height: 2.75rem;
   border-color: var(--field-border);
   background-color: var(--field-background);
 }
@@ -312,10 +312,10 @@ onUnmounted(() => {
 
 .drawer-action-button,
 .save-button {
-  min-height: 3rem;
-  padding: 0.75rem 1rem;
+  min-height: 2.5rem;
+  padding: 0.6rem 0.85rem;
   border: none;
-  border-radius: 0.95rem;
+  border-radius: 0.75rem;
   font-weight: 700;
   cursor: pointer;
   transition:

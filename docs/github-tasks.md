@@ -24,6 +24,8 @@ GitHub Tasks 是 workflow studio 的全局右侧面板，用来把当前本地 G
 5. `.git/config` 解析读取 `[remote "..."]` section 下的 `url`，并从 remote section 中选择 repository remote。
 6. public repository 可以直接请求 issues；401、403 和 404 会转成 auth 错误并显示 PAT 认证提示。
 7. issue 卡片展示 issue number、title、author 和更新时间。
+8. repository header 只展示 GitHub full name；不再额外展示 local name 与 full name 组合副标题，避免重复信息。
+9. issue detail 使用紧凑标题层级，展示 issue number、title、state、workflow select 和 Run 动作。
 
 ## State And Storage
 

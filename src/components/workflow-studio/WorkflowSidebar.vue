@@ -171,9 +171,9 @@ function selectWorkflow(workflowId: string) {
 }
 
 .create-button {
-  min-height: 3.5rem;
-  padding: 0.95rem 1.2rem;
-  border-radius: 1rem;
+  min-height: 2.75rem;
+  padding: 0.7rem 1rem;
+  border-radius: 0.75rem;
   background: var(--primary-action-background);
   color: var(--primary-action-foreground);
   font-weight: 700;
@@ -182,13 +182,13 @@ function selectWorkflow(workflowId: string) {
 
 .skills-button,
 .tasks-button {
-  min-height: 3rem;
-  gap: 0.55rem;
+  min-height: 2.5rem;
+  gap: 0.4rem;
   border: 1px solid var(--panel-border);
-  border-radius: 0.95rem;
+  border-radius: 0.75rem;
   background: var(--surface-card-soft);
   color: var(--text-primary);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .skills-button--active,
@@ -232,8 +232,8 @@ function selectWorkflow(workflowId: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2rem;
-  min-height: 2rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
   padding: 0 0.5rem;
   border-radius: 999px;
   background: var(--surface-card-soft);
@@ -258,9 +258,9 @@ function selectWorkflow(workflowId: string) {
   align-items: center;
   width: 100%;
   height: auto;
-  gap: 0.85rem;
-  padding: 0.95rem 1rem;
-  border-radius: 1rem;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.75rem;
   background: var(--surface-card-soft);
   text-align: left;
 }
@@ -287,7 +287,7 @@ function selectWorkflow(workflowId: string) {
 }
 
 .workflow-item__title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
