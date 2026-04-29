@@ -31,6 +31,7 @@ Workflow Studio 是当前应用的主工作台模块，负责本地 workflow 的
 7. Drawer 的 skill 候选来自已经添加的 node skills。
 8. 打开 Skills 面板或 Tasks 面板会关闭当前节点 Drawer。
 9. 从 Skills 面板或 Tasks 面板重新选择 workflow 时，右侧主区域回到 workflow canvas，并清理节点编辑态。
+10. issue detail 中选择 workflow 并 Run 时，被选 workflow 的每个节点都必须有 skill assignment；缺失 skill 的 workflow 不会提交给本地 runner。
 
 ## State Model
 
@@ -56,9 +57,10 @@ Workflow Studio 是当前应用的主工作台模块，负责本地 workflow 的
 ## Integration Points
 
 1. 与 Skills Catalog 的交点是 Drawer 的 `addedNodeSkills` 候选列表和节点 `skillId` 保存规则。
-2. 与 GitHub Tasks 的交点是右侧主区域面板切换；workflow 数据仍由 Workflow Studio 管理。
-3. 与 Color Mode 的交点是 Sidebar 品牌区；主题状态由 Color Mode 管理。
-4. 与 UI primitives 的交点是 Button、Dialog、Drawer、Input、Label、Select 等基础组件。
+2. 与 GitHub Tasks 的交点是右侧主区域面板切换，以及 issue Run 时读取 workflow 节点 skill assignment 来决定可执行性。
+3. 与 Workflow Runs 的交点是 `WorkflowRecord` 中的 nodes、edges 和 nodeConfigs 会被转换为本地 runner payload。
+4. 与 Color Mode 的交点是 Sidebar 品牌区；主题状态由 Color Mode 管理。
+5. 与 UI primitives 的交点是 Button、Dialog、Drawer、Input、Label、Select 等基础组件。
 
 ## Validation Basis
 
@@ -66,4 +68,5 @@ Workflow Studio 是当前应用的主工作台模块，负责本地 workflow 的
 2. `tests/logic/workflow-store.test.ts` 覆盖 Pinia workflow store 与 `useWorkflow` 门面。
 3. `tests/logic/workflow-studio.test.ts` 覆盖页面级 composable 的面板切换、skill 添加状态和节点保存规则。
 4. `tests/logic/workflow-ui.test.ts` 覆盖 Sidebar、App、Drawer 等组件接线。
-5. `tests/ui/workflow-sidebar.spec.ts` 覆盖创建 workflow、切换画布、节点 Drawer 改名、added node skill select 和从全局面板回到画布等关键交互。
+5. `tests/logic/workflow-runs.test.ts` 覆盖 workflow 节点 skill assignment 如何影响 Run payload 与可执行性。
+6. `tests/ui/workflow-sidebar.spec.ts` 覆盖创建 workflow、切换画布、节点 Drawer 改名、added node skill select 和从全局面板回到画布等关键交互。

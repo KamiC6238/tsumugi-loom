@@ -38,7 +38,10 @@
 | Skills catalog | `tests/logic/skills.test.ts` | catalog 载入、frontmatter 解析、macro/node 分类、added node skill 过滤 |
 | Skills store | `tests/logic/skills-store.test.ts` | 添加状态、未知 skill 防护、added node skills 派生 |
 | GitHub helper | `tests/logic/github.test.ts` | remote 解析、`.git/config` repository 选择、issue normalization、pull request 过滤、storage helper |
-| GitHub tasks store | `tests/logic/github-tasks-store.test.ts` | repository/token restore、public/authenticated fetch、empty/auth error、stale request 防护 |
+| GitHub tasks store | `tests/logic/github-tasks-store.test.ts` | repository/token restore、public/authenticated fetch、empty/auth error、stale response 防护 |
+| Workflow run helpers | `tests/logic/workflow-runs.test.ts` | executable node 派生、缺 skill 拦截、本地 runner payload 生成 |
+| Workflow run store | `tests/logic/workflow-runs-store.test.ts` | 本地 runner 提交成功、缺 skill 拦截、runner 错误状态 |
+| Copilot runner script | `tests/logic/copilot-runner-script.test.ts` | run artifact 合同、fresh CLI spawn flags、review loop、严格 node-result 校验、skillId 安全、Origin allowlist |
 | Color mode | `tests/logic/color-mode.test.ts` | localStorage 初始化、切换持久化、document root 同步、按钮图标和 aria label |
 
 ## Test Selection Guide
@@ -47,9 +50,11 @@
 2. 改 Sidebar、Canvas、Drawer 或 workflow 页面编排：跑 `pnpm test:logic`；用户路径变化时补 `pnpm test:ui`。
 3. 改 skill parser、skills store、SkillsPanel 或 Drawer skill Select：跑 `pnpm test:logic`；影响真实交互时补 `pnpm test:ui`。
 4. 改 GitHub repository 解析、API 请求、PAT 或 TasksPanel：跑 `pnpm test:logic`；影响面板交互时补 `pnpm test:ui`。
-5. 改 color mode、全局样式变量或 ThemeModeToggle：跑 `pnpm test:logic` 和 `pnpm build`。
-6. 改 Vite、TypeScript、Tailwind、Vue Flow 或 shadcn-vue 集成配置：至少跑 `pnpm build`，按影响面补测试。
-7. 纯文档改动：检查 markdown 链接和文档路由。
+5. 改 workflow run payload、runner store 或 TasksPanel Run 行为：跑 `pnpm test:logic` 和 `pnpm build`；影响真实浏览器交互时补 `pnpm test:ui`。
+6. 改 `scripts/loom/copilot-runner.mjs`：跑 `node --check scripts/loom/copilot-runner.mjs` 和 `tests/logic/copilot-runner-script.test.ts`；HTTP、Origin、skill snapshot、node-result 或 spawn flags 变化时再跑完整 `pnpm test:logic`。
+7. 改 color mode、全局样式变量或 ThemeModeToggle：跑 `pnpm test:logic` 和 `pnpm build`。
+8. 改 Vite、TypeScript、Tailwind、Vue Flow 或 shadcn-vue 集成配置：至少跑 `pnpm build`，按影响面补测试。
+9. 纯文档改动：检查 markdown 链接和文档路由。
 
 ## Playwright Runtime
 

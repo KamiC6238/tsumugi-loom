@@ -19,11 +19,12 @@
 7. `tests/logic/`：Vitest 逻辑测试和组件接线测试。
 8. `tests/ui/`：Playwright 端到端 UI 测试。
 9. `public/` 与 `src/assets/`：静态资源。
-10. `scripts/loom/`：workflow 脚本自动化入口，负责仓库内 workflow scaffold 与相关流程控制。
+10. `scripts/loom/`：workflow 脚本自动化入口，当前包含本地 Copilot runner，负责浏览器外 workflow Run 执行。
 11. `artifacts/workflows/`：每次开发回合生成的显式 workflow 产物，如 plan、review、test-report 与 knowledge delta。
-12. `docs/`：长期维护的模块文档和支撑文档。
-13. `ARCHITECTURE.md`：项目业务地图和文档路由入口。
-14. `README.md`：项目定位、入口说明和高层使用方式。
+12. `artifacts/runs/`：本地 runner 生成的 issue workflow Run 产物，包含 input snapshot、skill snapshot、节点 prompt、日志和 node-result。
+13. `docs/`：长期维护的模块文档和支撑文档。
+14. `ARCHITECTURE.md`：项目业务地图和文档路由入口。
+15. `README.md`：项目定位、入口说明和高层使用方式。
 
 ## Runtime Source Routing
 
@@ -31,7 +32,7 @@
 | --- | --- | --- |
 | Workflow shell、Sidebar、Canvas、Drawer | `src/App.vue`, `src/composables/useWorkflowStudio.ts`, `src/components/workflow-studio/`, `src/stores/workflows.ts`, `src/lib/workflows.ts` | [workflow-studio.md](workflow-studio.md) |
 | Skill catalog 和 skill 添加状态 | `.github/skills/`, `src/lib/skills.ts`, `src/stores/skills.ts`, `SkillsPanel.vue`, `WorkflowNodeDrawer.vue` | [skills-catalog.md](skills-catalog.md) |
-| GitHub Tasks | `src/lib/github.ts`, `src/stores/githubTasks.ts`, `TasksPanel.vue` | [github-tasks.md](github-tasks.md) |
+| GitHub Tasks 和 workflow Run | `src/lib/github.ts`, `src/lib/workflowRuns.ts`, `src/stores/githubTasks.ts`, `src/stores/workflowRuns.ts`, `TasksPanel.vue`, `scripts/loom/copilot-runner.mjs` | [github-tasks.md](github-tasks.md) |
 | Color mode | `src/composables/useColorMode.ts`, `ThemeModeToggle.vue`, `src/style.css`, `src/main.ts` | [color-mode.md](color-mode.md) |
 | 测试策略与验证入口 | `tests/logic/`, `tests/ui/`, `vitest.config.ts`, `playwright.config.ts`, `package.json` | [validation-map.md](validation-map.md) |
 
@@ -56,6 +57,7 @@
 6. 逻辑测试：Vitest，配置在 `vitest.config.ts`。
 7. UI 测试：Playwright，配置在 `playwright.config.ts`。
 8. 构建入口：`pnpm build`。
+9. 本地 Copilot runner：`pnpm runner:copilot` 启动真实 Copilot CLI runner；`pnpm runner:copilot:dry-run` 启动只写 artifact、不调用 Copilot CLI 的 dry-run runner。
 
 ## Workflow Artifacts
 
@@ -63,6 +65,7 @@
 2. 每个 workflow 回合使用独立时间戳目录。
 3. 已存在的回合目录通常包含 `plan.md`、`code-change.md`、`tdd-cycle.md`、`test-report.md`、`test-review.md`、`review.md` 和 `manifest.json`。
 4. artifact 可以作为事实依据，但稳定事实需要回写到 `ARCHITECTURE.md`、`README.md` 或 `docs/` 下对应长期文档。
+5. `artifacts/runs/<run-id>/` 由本地 Copilot runner 生成，保存 issue workflow Run 的 input、skill snapshot、节点 prompt/log/result 和 run manifest；这些是执行记录，不替代 `artifacts/workflows/` 的开发回合产物。
 
 ## Change Guidance For Agents
 

@@ -13,6 +13,7 @@ import WorkflowNodeDrawer from '../../src/components/workflow-studio/WorkflowNod
 import WorkflowSidebar from '../../src/components/workflow-studio/WorkflowSidebar.vue'
 import type { SkillCatalogItem } from '../../src/lib/skills'
 import type { GithubRepository } from '../../src/lib/github'
+import { DEFAULT_WORKFLOW_RUNNER_ENDPOINT } from '../../src/lib/workflowRuns'
 import type { WorkflowRecord } from '../../src/lib/workflows'
 import { useGithubTasksStore } from '../../src/stores/githubTasks'
 
@@ -64,6 +65,43 @@ const workflows: WorkflowRecord[] = [
     nodeConfigs: {},
   },
 ]
+
+const runnableWorkflow: WorkflowRecord = {
+  id: 'workflow-runner',
+  name: 'Runner Flow',
+  accent: '#3f6c62',
+  nodes: [
+    {
+      id: 'workflow-runner-plan',
+      type: 'input',
+      position: { x: 0, y: 0 },
+      data: { label: 'Plan issue' },
+    },
+    {
+      id: 'workflow-runner-review',
+      type: 'output',
+      position: { x: 200, y: 0 },
+      data: { label: 'Review changes' },
+    },
+  ],
+  edges: [
+    { id: 'plan-review', source: 'workflow-runner-plan', target: 'workflow-runner-review' },
+  ],
+  nodeConfigs: {
+    'workflow-runner-plan': { name: 'Plan issue', skillId: 'plan-writer' },
+    'workflow-runner-review': { name: 'Review changes', skillId: 'code-review-writer' },
+  },
+}
+
+const incompleteWorkflow: WorkflowRecord = {
+  ...runnableWorkflow,
+  id: 'workflow-incomplete',
+  name: 'Incomplete Flow',
+  nodeConfigs: {
+    ...runnableWorkflow.nodeConfigs,
+    'workflow-runner-review': { name: 'Review changes', skillId: null },
+  },
+}
 
 describe('workflow studio UI wiring', () => {
   it('renders real skill cards by kind and emits switch toggles from SkillsPanel', async () => {
@@ -365,6 +403,194 @@ describe('workflow studio UI wiring', () => {
     }
   })
 
+  it('submits a runnable issue workflow to the local Copilot runner endpoint', async () => {
+    window.localStorage.clear()
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === DEFAULT_WORKFLOW_RUNNER_ENDPOINT) {
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+
+        expect(body).toMatchObject({
+          issue: {
+            number: 4,
+            title: '新增一篇博客',
+          },
+          workflow: {
+            id: 'workflow-runner',
+            nodes: [
+              { order: 1, nodeId: 'workflow-runner-plan', skillId: 'plan-writer' },
+              { order: 2, nodeId: 'workflow-runner-review', skillId: 'code-review-writer' },
+            ],
+          },
+          options: {
+            freshSessionPerNode: true,
+            skillInjection: 'snapshot-skill-directory',
+          },
+        })
+
+        return new Response(JSON.stringify({
+          runId: 'run-1',
+          status: 'queued',
+          artifactDir: 'artifacts/runs/run-1',
+        }), { status: 202 })
+      }
+
+      return new Response(JSON.stringify([
+        {
+          id: 21,
+          number: 4,
+          title: '新增一篇博客',
+          state: 'open',
+          html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+          user: { login: 'KamiC6238' },
+          labels: [{ name: 'documentation' }],
+          comments: 3,
+          created_at: '2026-04-15T00:00:00Z',
+          updated_at: '2026-04-16T00:00:00Z',
+        },
+      ]), { status: 200 })
+    })
+
+    vi.stubGlobal('fetch', fetcher)
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [runnableWorkflow] },
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      await flushPromises()
+      await wrapper.get('.issue-card').trigger('click')
+      wrapper.getComponent(Select).vm.$emit('update:modelValue', 'workflow-runner')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="issue-run-button"]').attributes('disabled')).toBeUndefined()
+
+      await wrapper.get('[data-testid="issue-run-button"]').trigger('click')
+      await flushPromises()
+
+      expect(fetcher).toHaveBeenCalledWith(
+        DEFAULT_WORKFLOW_RUNNER_ENDPOINT,
+        expect.objectContaining({ method: 'POST' }),
+      )
+      expect(wrapper.get('[data-testid="issue-run-status"]').text()).toContain('Run queued: run-1')
+      expect(wrapper.get('[data-testid="issue-run-status"]').text()).toContain('artifacts/runs/run-1')
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('shows the local runner error message when workflow submission is rejected', async () => {
+    window.localStorage.clear()
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === DEFAULT_WORKFLOW_RUNNER_ENDPOINT) {
+        return new Response(JSON.stringify({
+          message: 'Runner rejected the workflow run.',
+        }), { status: 422 })
+      }
+
+      return new Response(JSON.stringify([
+        {
+          id: 21,
+          number: 4,
+          title: '新增一篇博客',
+          state: 'open',
+          html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+          user: { login: 'KamiC6238' },
+          labels: [{ name: 'documentation' }],
+          comments: 3,
+          created_at: '2026-04-15T00:00:00Z',
+          updated_at: '2026-04-16T00:00:00Z',
+        },
+      ]), { status: 200 })
+    })
+
+    vi.stubGlobal('fetch', fetcher)
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [runnableWorkflow] },
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      await flushPromises()
+      await wrapper.get('.issue-card').trigger('click')
+      wrapper.getComponent(Select).vm.$emit('update:modelValue', 'workflow-runner')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-run-button"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="issue-run-status"]').text())
+        .toBe('Runner rejected the workflow run.')
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('keeps Run disabled when the selected workflow has an unconfigured node skill', async () => {
+    window.localStorage.clear()
+    vi.stubGlobal('fetch', vi.fn(async () => (
+      new Response(JSON.stringify([
+        {
+          id: 21,
+          number: 4,
+          title: '新增一篇博客',
+          state: 'open',
+          html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+          user: { login: 'KamiC6238' },
+          labels: [{ name: 'documentation' }],
+          comments: 3,
+          created_at: '2026-04-15T00:00:00Z',
+          updated_at: '2026-04-16T00:00:00Z',
+        },
+      ]), { status: 200 })
+    )))
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [incompleteWorkflow] },
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      await flushPromises()
+      await wrapper.get('.issue-card').trigger('click')
+      wrapper.getComponent(Select).vm.$emit('update:modelValue', 'workflow-incomplete')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="issue-run-button"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.get('[data-testid="issue-run-status"]').text())
+        .toBe('Configure skills for every workflow node before running.')
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
   it('passes only added node skills from App to the node drawer', async () => {
     const wrapper = mount(App, {
       global: {
@@ -444,8 +670,8 @@ describe('workflow studio UI wiring', () => {
     const selectStubs = {
       Select: {
         props: ['disabled'],
-        provide() {
-          return { selectDisabled: this.disabled }
+        provide(this: { disabled?: boolean }): { selectDisabled: boolean } {
+          return { selectDisabled: Boolean(this.disabled) }
         },
         template: '<div data-slot="select"><slot /></div>',
       },

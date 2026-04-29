@@ -12,6 +12,7 @@ import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -21,8 +22,10 @@ import {
 } from '@/components/ui/select'
 import { parseGithubRepositoryFromGitConfig } from '@/lib/github'
 import type { GithubIssue } from '@/lib/github'
+import { getWorkflowRunReadiness } from '@/lib/workflowRuns'
 import type { WorkflowRecord } from '@/lib/workflows'
 import { useGithubTasksStore } from '@/stores/githubTasks'
+import { useWorkflowRunsStore } from '@/stores/workflowRuns'
 
 interface DirectoryHandleLike {
   name: string
@@ -45,6 +48,7 @@ const props = withDefaults(defineProps<{
 })
 
 const githubTasksStore = useGithubTasksStore()
+const workflowRunsStore = useWorkflowRunsStore()
 const {
   selectedRepository,
   authToken,
@@ -57,6 +61,12 @@ const {
   isLoading,
   issueCount,
 } = storeToRefs(githubTasksStore)
+const {
+  status: workflowRunStatus,
+  latestSubmission: latestWorkflowRunSubmission,
+  errorMessage: workflowRunErrorMessage,
+  isSubmitting: isWorkflowRunSubmitting,
+} = storeToRefs(workflowRunsStore)
 
 const tokenInput = shallowRef('')
 const isPickingRepository = shallowRef(false)
@@ -73,10 +83,47 @@ const selectedIssue = computed<GithubIssue | null>(() => {
   return issues.value.find((issue) => issue.id === selectedIssueId.value) ?? null
 })
 const hasWorkflows = computed(() => props.workflows.length > 0)
+const selectedWorkflow = computed(() => (
+  props.workflows.find((workflow) => workflow.id === selectedWorkflowId.value) ?? null
+))
+const workflowRunReadiness = computed(() => getWorkflowRunReadiness(selectedWorkflow.value))
 const workflowSelectPlaceholder = computed(() => (
   hasWorkflows.value ? 'Select workflow' : 'No workflows created'
 ))
-const canRunIssueWorkflow = computed(() => Boolean(selectedIssue.value && selectedWorkflowId.value))
+const canRunIssueWorkflow = computed(() => Boolean(
+  selectedIssue.value
+  && selectedWorkflow.value
+  && workflowRunReadiness.value.canRun
+  && !isWorkflowRunSubmitting.value,
+))
+const workflowRunStatusMessage = computed(() => {
+  if (workflowRunStatus.value === 'submitting') {
+    return 'Submitting workflow run'
+  }
+
+  if (workflowRunStatus.value === 'submitted' && latestWorkflowRunSubmission.value) {
+    return latestWorkflowRunSubmission.value.artifactDir
+      ? `Run queued: ${latestWorkflowRunSubmission.value.runId} (${latestWorkflowRunSubmission.value.artifactDir})`
+      : `Run queued: ${latestWorkflowRunSubmission.value.runId}`
+  }
+
+  if (workflowRunStatus.value === 'error' && workflowRunErrorMessage.value) {
+    return workflowRunErrorMessage.value
+  }
+
+  if (selectedWorkflowId.value && !workflowRunReadiness.value.canRun) {
+    return workflowRunReadiness.value.message
+  }
+
+  return null
+})
+const workflowRunStatusTone = computed(() => {
+  if (workflowRunStatus.value === 'error' || (selectedWorkflowId.value && !workflowRunReadiness.value.canRun)) {
+    return 'error'
+  }
+
+  return workflowRunStatus.value === 'submitted' ? 'success' : 'neutral'
+})
 
 watch([selectedRepository, authToken], () => {
   if (!selectedRepository.value) {
@@ -102,6 +149,10 @@ watch(
   },
 )
 
+watch([selectedIssueId, selectedWorkflowId], () => {
+  workflowRunsStore.resetWorkflowRunStatus()
+})
+
 function saveAuthToken() {
   const wasSaved = githubTasksStore.setAuthToken(tokenInput.value)
 
@@ -118,10 +169,15 @@ function returnToIssueList() {
   selectedIssueId.value = null
 }
 
-function runSelectedWorkflow() {
-  if (!canRunIssueWorkflow.value) {
+async function runSelectedWorkflow() {
+  if (!canRunIssueWorkflow.value || !selectedIssue.value || !selectedWorkflow.value) {
     return
   }
+
+  await workflowRunsStore.startIssueWorkflowRun({
+    issue: selectedIssue.value,
+    workflow: selectedWorkflow.value,
+  })
 }
 
 async function openRepositoryPicker() {
@@ -407,6 +463,14 @@ function formatIssueDate(value: string) {
                   <PlayIcon aria-hidden="true" />
                   <span>Run</span>
                 </Button>
+                <p
+                  v-if="workflowRunStatusMessage"
+                  class="issue-run-status"
+                  :class="`issue-run-status--${workflowRunStatusTone}`"
+                  data-testid="issue-run-status"
+                >
+                  {{ workflowRunStatusMessage }}
+                </p>
               </div>
             </div>
           </div>
@@ -822,6 +886,7 @@ function formatIssueDate(value: string) {
   align-items: end;
   justify-content: end;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .issue-run-field {
@@ -844,6 +909,25 @@ function formatIssueDate(value: string) {
   background: var(--primary-action-background);
   color: var(--primary-action-foreground);
   box-shadow: var(--primary-action-shadow);
+}
+
+.issue-run-status {
+  width: 100%;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.issue-run-status--error {
+  color: var(--blocked);
+}
+
+.issue-run-status--success {
+  color: var(--completed);
 }
 
 @media (max-width: 900px) {
@@ -881,6 +965,10 @@ function formatIssueDate(value: string) {
   .issue-run-field {
     min-width: 0;
     width: 100%;
+  }
+
+  .issue-run-status {
+    text-align: left;
   }
 }
 </style>
