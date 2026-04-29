@@ -43,6 +43,7 @@ describe('skill catalog', () => {
         'vitest',
         'vue',
         'vue-best-practices',
+        'web-design-guidelines',
       ]),
     )
     expect(skillCatalog.every((skill) => skill.path.startsWith('.github/skills/'))).toBe(true)
@@ -91,6 +92,7 @@ describe('skill catalog', () => {
     ['vitest', 'node'],
     ['vue', 'node'],
     ['vue-best-practices', 'node'],
+    ['web-design-guidelines', 'node'],
   ] as const)('classifies %s as %s', (name, expectedKind) => {
     const realSkill = skillCatalog.find((skill) => skill.id === name)
 
