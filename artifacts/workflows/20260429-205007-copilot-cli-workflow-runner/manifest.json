@@ -1,0 +1,10 @@
+{
+  "workflowId": "20260429-205007-copilot-cli-workflow-runner",
+  "slug": "copilot-cli-workflow-runner",
+  "goal": "为 issue workflow Run 增加基于 Copilot CLI 的多节点新 session 执行闭环",
+  "createdAt": "2026-04-29T20:50:07+0800",
+  "updatedAt": "2026-04-29T23:08:58+0800",
+  "currentStage": "review",
+  "completedStages": ["plan", "coding", "testing", "review"],
+  "status": "completed"
+}
