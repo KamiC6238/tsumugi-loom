@@ -339,9 +339,15 @@ describe('workflow studio UI wiring', () => {
 
       await wrapper.get('.issue-card').trigger('click')
 
+      const detail = wrapper.get('[data-testid="issue-detail"]')
+      const header = detail.get('.issue-detail-header')
+
       expect(wrapper.find('[data-testid="issue-detail"]').exists()).toBe(true)
       expect(wrapper.find('.issue-grid').exists()).toBe(false)
-      expect(wrapper.text()).toContain('Comments')
+      expect(detail.find('.issue-meta').exists()).toBe(false)
+      expect(detail.find('.issue-detail-meta').exists()).toBe(false)
+      expect(header.find('[data-testid="issue-workflow-select"]').exists()).toBe(true)
+      expect(header.find('[data-testid="issue-run-button"]').exists()).toBe(true)
       expect(wrapper.findAllComponents(SelectItem).map((option) => option.text()))
         .toEqual(['Bugfix Flow', 'Release Flow'])
       expect(wrapper.get('[data-testid="issue-run-button"]').attributes('disabled')).toBeDefined()

@@ -12,7 +12,6 @@ import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -390,62 +389,46 @@ function formatIssueDateTime(value: string) {
               <h3 id="issue-detail-heading" class="issue-detail-title">
                 {{ selectedIssue.title }}
               </h3>
-              <p class="issue-meta">
-                {{ selectedIssue.author }} · Updated {{ formatIssueDateTime(selectedIssue.updatedAt) }}
-              </p>
             </div>
 
-            <span class="issue-state">{{ selectedIssue.state }}</span>
-          </div>
+            <div class="issue-detail-actions">
+              <span class="issue-state">{{ selectedIssue.state }}</span>
 
-          <dl class="issue-detail-meta">
-            <div>
-              <dt>Created</dt>
-              <dd>{{ formatIssueDateTime(selectedIssue.createdAt) }}</dd>
-            </div>
-            <div>
-              <dt>Comments</dt>
-              <dd>{{ selectedIssue.comments }}</dd>
-            </div>
-            <div>
-              <dt>Labels</dt>
-              <dd>{{ selectedIssue.labels.length ? selectedIssue.labels.join(', ') : 'None' }}</dd>
-            </div>
-          </dl>
-
-          <div class="issue-run-panel">
-            <div class="issue-run-field">
-              <Label for="issue-workflow">Workflow</Label>
-              <Select v-model="selectedWorkflowId" name="issueWorkflow" :disabled="!hasWorkflows">
-                <SelectTrigger
-                  id="issue-workflow"
-                  class="issue-workflow-select"
-                  data-testid="issue-workflow-select"
+              <div class="issue-detail-run-controls">
+                <div class="issue-run-field">
+                  <Select v-model="selectedWorkflowId" name="issueWorkflow" :disabled="!hasWorkflows">
+                    <SelectTrigger
+                      id="issue-workflow"
+                      aria-label="Select workflow"
+                      class="issue-workflow-select"
+                      data-testid="issue-workflow-select"
+                    >
+                      <SelectValue :placeholder="workflowSelectPlaceholder" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="workflow in workflows"
+                        :key="workflow.id"
+                        :value="workflow.id"
+                        data-testid="issue-workflow-option"
+                      >
+                        {{ workflow.name }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  class="issue-run-button"
+                  :disabled="!canRunIssueWorkflow"
+                  data-testid="issue-run-button"
+                  @click="runSelectedWorkflow"
                 >
-                  <SelectValue :placeholder="workflowSelectPlaceholder" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="workflow in workflows"
-                    :key="workflow.id"
-                    :value="workflow.id"
-                    data-testid="issue-workflow-option"
-                  >
-                    {{ workflow.name }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                  <PlayIcon aria-hidden="true" />
+                  <span>Run</span>
+                </Button>
+              </div>
             </div>
-            <Button
-              type="button"
-              class="issue-run-button"
-              :disabled="!canRunIssueWorkflow"
-              data-testid="issue-run-button"
-              @click="runSelectedWorkflow"
-            >
-              <PlayIcon aria-hidden="true" />
-              <span>Run</span>
-            </Button>
           </div>
         </article>
       </section>
@@ -805,11 +788,10 @@ function formatIssueDateTime(value: string) {
   overflow: auto;
 }
 
-.issue-detail-header,
-.issue-run-panel {
+.issue-detail-header {
   display: flex;
   min-width: 0;
-  align-items: start;
+  align-items: stretch;
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem;
@@ -822,6 +804,14 @@ function formatIssueDateTime(value: string) {
   display: grid;
   min-width: 0;
   gap: 0.5rem;
+}
+
+.issue-detail-actions {
+  display: grid;
+  min-width: min(100%, 24rem);
+  justify-items: end;
+  align-content: space-between;
+  gap: 1rem;
 }
 
 .issue-detail-title {
@@ -847,45 +837,18 @@ function formatIssueDateTime(value: string) {
   text-transform: uppercase;
 }
 
-.issue-detail-meta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 0;
-}
-
-.issue-detail-meta div {
-  min-width: 0;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 0.5rem;
-  background: var(--surface-card-muted);
-}
-
-.issue-detail-meta dt {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.issue-detail-meta dd {
-  min-width: 0;
-  margin: 0.35rem 0 0;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-}
-
-.issue-run-panel {
+.issue-detail-run-controls {
+  display: flex;
+  width: 100%;
   align-items: end;
+  justify-content: end;
+  gap: 1rem;
 }
 
 .issue-run-field {
   display: grid;
   min-width: min(100%, 18rem);
+  width: min(100%, 18rem);
   gap: 0.55rem;
 }
 
@@ -922,13 +885,23 @@ function formatIssueDateTime(value: string) {
   }
 
   .issue-detail-header,
-  .issue-run-panel {
+  .issue-detail-run-controls {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .issue-detail-meta {
-    grid-template-columns: 1fr;
+  .issue-detail-actions {
+    min-width: 0;
+    justify-items: stretch;
+  }
+
+  .issue-state {
+    justify-self: start;
+  }
+
+  .issue-run-field {
+    min-width: 0;
+    width: 100%;
   }
 }
 </style>
