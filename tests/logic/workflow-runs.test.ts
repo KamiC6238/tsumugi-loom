@@ -5,7 +5,7 @@ import {
   getExecutableWorkflowNodes,
   getWorkflowRunReadiness,
 } from '../../src/lib/workflowRuns'
-import type { GithubIssue } from '../../src/lib/github'
+import type { GithubIssue, GithubRepository } from '../../src/lib/github'
 import type { WorkflowRecord } from '../../src/lib/workflows'
 
 const issue: GithubIssue = {
@@ -19,6 +19,14 @@ const issue: GithubIssue = {
   comments: 2,
   createdAt: '2026-04-28T00:00:00Z',
   updatedAt: '2026-04-29T00:00:00Z',
+}
+
+const repository: GithubRepository = {
+  owner: 'octo-org',
+  name: 'hello-world',
+  fullName: 'octo-org/hello-world',
+  remoteUrl: 'git@github.com:octo-org/hello-world.git',
+  localName: 'hello-world',
 }
 
 const runnableWorkflow: WorkflowRecord = {
@@ -138,6 +146,7 @@ describe('workflow run helpers', () => {
   it('builds the local runner request payload from an issue and workflow snapshot', () => {
     const request = createWorkflowRunRequest({
       issue,
+      repository,
       workflow: runnableWorkflow,
       now: new Date('2026-04-29T12:00:00.000Z'),
       randomSuffix: 'abc123',
@@ -146,6 +155,11 @@ describe('workflow run helpers', () => {
     expect(request).toEqual({
       runId: '20260429-120000-issue-4-workflow-1-abc123',
       createdAt: '2026-04-29T12:00:00.000Z',
+      repository: {
+        owner: 'octo-org',
+        name: 'hello-world',
+        fullName: 'octo-org/hello-world',
+      },
       issue,
       workflow: {
         id: 'workflow-1',

@@ -1,6 +1,6 @@
 import type { Edge, Node } from '@vue-flow/core'
 
-import type { GithubIssue } from '@/lib/github'
+import type { GithubIssue, GithubRepository } from '@/lib/github'
 import { getWorkflowNodeConfig } from '@/lib/workflows'
 import type { WorkflowRecord } from '@/lib/workflows'
 
@@ -24,6 +24,7 @@ export interface WorkflowRunReadiness {
 export interface WorkflowRunRequest {
   runId: string
   createdAt: string
+  repository: Pick<GithubRepository, 'owner' | 'name' | 'fullName'>
   issue: GithubIssue
   workflow: {
     id: string
@@ -40,6 +41,7 @@ export interface WorkflowRunRequest {
 
 export interface CreateWorkflowRunRequestInput {
   issue: GithubIssue
+  repository: GithubRepository
   workflow: WorkflowRecord
   now?: Date
   randomSuffix?: string
@@ -103,6 +105,7 @@ export function getWorkflowRunReadiness(workflow: WorkflowRecord | null): Workfl
 
 export function createWorkflowRunRequest({
   issue,
+  repository,
   workflow,
   now = new Date(),
   randomSuffix = createRandomSuffix(),
@@ -117,6 +120,11 @@ export function createWorkflowRunRequest({
   return {
     runId: createWorkflowRunId(issue, workflow, now, randomSuffix),
     createdAt: now.toISOString(),
+    repository: {
+      owner: repository.owner,
+      name: repository.name,
+      fullName: repository.fullName,
+    },
     issue,
     workflow: {
       id: workflow.id,

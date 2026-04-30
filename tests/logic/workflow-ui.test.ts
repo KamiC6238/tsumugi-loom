@@ -47,6 +47,17 @@ const repository: GithubRepository = {
   localName: 'Tsumugi',
 }
 
+const RUNNER_REPOSITORY_ENDPOINT = 'http://127.0.0.1:43117/repository'
+
+function createRunnerStatus(repositoryFullName = repository.fullName, knowledgeBaseUpdates = true) {
+  return {
+    repoPath: `/workspace/${repositoryFullName.split('/')[1]}`,
+    repositoryFullName,
+    mode: 'dry-run',
+    capabilities: { knowledgeBaseUpdates, repositorySelection: true },
+  }
+}
+
 const workflows: WorkflowRecord[] = [
   {
     id: 'workflow-1',
@@ -406,10 +417,29 @@ describe('workflow studio UI wiring', () => {
   it('submits a runnable issue workflow to the local Copilot runner endpoint', async () => {
     window.localStorage.clear()
     const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === RUNNER_REPOSITORY_ENDPOINT) {
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+
+        expect(init).toMatchObject({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        expect(body).toMatchObject({
+          repository: { fullName: repository.fullName },
+        })
+
+        return new Response(JSON.stringify(createRunnerStatus()), { status: 200 })
+      }
+
       if (String(input) === DEFAULT_WORKFLOW_RUNNER_ENDPOINT) {
         const body = JSON.parse(String(init?.body)) as Record<string, unknown>
 
         expect(body).toMatchObject({
+          repository: {
+            owner: 'KamiC6238',
+            name: 'Tsumugi',
+            fullName: 'KamiC6238/Tsumugi',
+          },
           issue: {
             number: 4,
             title: '新增一篇博客',
@@ -472,15 +502,609 @@ describe('workflow studio UI wiring', () => {
 
       expect(wrapper.get('[data-testid="issue-run-button"]').attributes('disabled')).toBeUndefined()
 
+      const callCountBeforeRun = fetcher.mock.calls.length
+
       await wrapper.get('[data-testid="issue-run-button"]').trigger('click')
       await flushPromises()
 
+      const runClickUrls = fetcher.mock.calls
+        .slice(callCountBeforeRun)
+        .map(([input]) => String(input))
+
+      expect(runClickUrls.slice(0, 2)).toEqual([
+        RUNNER_REPOSITORY_ENDPOINT,
+        DEFAULT_WORKFLOW_RUNNER_ENDPOINT,
+      ])
       expect(fetcher).toHaveBeenCalledWith(
         DEFAULT_WORKFLOW_RUNNER_ENDPOINT,
         expect.objectContaining({ method: 'POST' }),
       )
       expect(wrapper.get('[data-testid="issue-run-status"]').text()).toContain('Run queued: run-1')
       expect(wrapper.get('[data-testid="issue-run-status"]').text()).toContain('artifacts/runs/run-1')
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('shows a Knowledge Base update action for completed issue runs without opening details', async () => {
+    window.localStorage.clear()
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = String(input)
+
+      if (requestUrl === RUNNER_REPOSITORY_ENDPOINT) {
+        return new Response(JSON.stringify({
+          repoPath: '/workspace/Tsumugi',
+          repositoryFullName: 'KamiC6238/Tsumugi',
+          mode: 'dry-run',
+          capabilities: { knowledgeBaseUpdates: true },
+        }), { status: 200 })
+      }
+
+      if (requestUrl === DEFAULT_WORKFLOW_RUNNER_ENDPOINT) {
+        return new Response(JSON.stringify({
+          runId: 'run-issue-4',
+          status: 'completed',
+          artifactDir: 'artifacts/runs/run-issue-4',
+        }), { status: 202 })
+      }
+
+      if (requestUrl === 'http://127.0.0.1:43117/runs/run-issue-4/knowledge-base') {
+        expect(init).toMatchObject({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+
+        expect(body).toMatchObject({
+          runId: 'run-issue-4',
+          issue: {
+            id: 21,
+            number: 4,
+            title: '新增一篇博客',
+            url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+          },
+          repository: { fullName: 'KamiC6238/Tsumugi' },
+          target: { path: 'docs/knowledge-base.md' },
+        })
+
+        return new Response(JSON.stringify({
+          runId: 'run-issue-4',
+          status: 'updated',
+          targetPath: 'docs/knowledge-base.md',
+          factCount: 4,
+          sourceArtifacts: ['artifacts/runs/run-issue-4/input/issue.json'],
+          updateArtifact: 'artifacts/runs/run-issue-4/knowledge-base/update.json',
+        }), { status: 200 })
+      }
+
+      if (requestUrl.startsWith('https://api.github.com/repos/KamiC6238/Tsumugi/issues')) {
+        return new Response(JSON.stringify([
+          {
+            id: 21,
+            number: 4,
+            title: '新增一篇博客',
+            state: 'open',
+            html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+            user: { login: 'KamiC6238' },
+            labels: [{ name: 'documentation' }],
+            comments: 3,
+            created_at: '2026-04-15T00:00:00Z',
+            updated_at: '2026-04-16T00:00:00Z',
+          },
+        ]), { status: 200 })
+      }
+
+      throw new Error(`Unexpected fetch: ${requestUrl}`)
+    })
+
+    vi.stubGlobal('fetch', fetcher)
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [runnableWorkflow] },
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      await flushPromises()
+      await wrapper.get('.issue-card').trigger('click')
+      wrapper.getComponent(Select).vm.$emit('update:modelValue', 'workflow-runner')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-run-button"]').trigger('click')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-detail-back"]').trigger('click')
+      await flushPromises()
+
+      const updateButton = wrapper.get('[data-testid="knowledge-base-update-4"]')
+
+      expect(updateButton.text()).toContain('更新 Knowledge base')
+      expect(updateButton.attributes('disabled')).toBeUndefined()
+
+      await updateButton.trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="issue-detail"]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="knowledge-base-status-4"]').text())
+        .toContain('Updated docs/knowledge-base.md with 4 facts')
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('shows why Knowledge Base updates are unavailable before a completed run exists', async () => {
+    window.localStorage.clear()
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const requestUrl = String(input)
+
+      if (requestUrl === RUNNER_REPOSITORY_ENDPOINT) {
+        return new Response(JSON.stringify({ message: 'Runner is not ready.' }), { status: 503 })
+      }
+
+      if (requestUrl.startsWith('https://api.github.com/repos/KamiC6238/Tsumugi/issues')) {
+        return new Response(JSON.stringify([
+          {
+            id: 21,
+            number: 4,
+            title: '新增一篇博客',
+            state: 'open',
+            html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+            user: { login: 'KamiC6238' },
+            labels: [{ name: 'documentation' }],
+            comments: 3,
+            created_at: '2026-04-15T00:00:00Z',
+            updated_at: '2026-04-16T00:00:00Z',
+          },
+        ]), { status: 200 })
+      }
+
+      throw new Error(`Unexpected fetch: ${requestUrl}`)
+    })
+
+    vi.stubGlobal('fetch', fetcher)
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [runnableWorkflow] },
+        global: { plugins: [pinia] },
+      })
+
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="knowledge-base-update-4"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.get('[data-testid="knowledge-base-status-4"]').text())
+        .toBe('Run the issue workflow before updating the Knowledge base.')
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('refreshes a queued issue run when returning to the issue list', async () => {
+    window.localStorage.clear()
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const requestUrl = String(input)
+
+      if (requestUrl === RUNNER_REPOSITORY_ENDPOINT) {
+        return new Response(JSON.stringify({
+          repoPath: '/workspace/Tsumugi',
+          repositoryFullName: 'KamiC6238/Tsumugi',
+          mode: 'dry-run',
+          capabilities: { knowledgeBaseUpdates: true },
+        }), { status: 200 })
+      }
+
+      if (requestUrl === DEFAULT_WORKFLOW_RUNNER_ENDPOINT) {
+        return new Response(JSON.stringify({
+          runId: 'run-issue-4',
+          status: 'queued',
+          artifactDir: 'artifacts/runs/run-issue-4',
+        }), { status: 202 })
+      }
+
+      if (requestUrl === 'http://127.0.0.1:43117/runs/run-issue-4') {
+        return new Response(JSON.stringify({
+          runId: 'run-issue-4',
+          status: 'completed',
+          artifactDir: 'artifacts/runs/run-issue-4',
+        }), { status: 200 })
+      }
+
+      if (requestUrl.startsWith('https://api.github.com/repos/KamiC6238/Tsumugi/issues')) {
+        return new Response(JSON.stringify([
+          {
+            id: 21,
+            number: 4,
+            title: '新增一篇博客',
+            state: 'open',
+            html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+            user: { login: 'KamiC6238' },
+            labels: [{ name: 'documentation' }],
+            comments: 3,
+            created_at: '2026-04-15T00:00:00Z',
+            updated_at: '2026-04-16T00:00:00Z',
+          },
+        ]), { status: 200 })
+      }
+
+      throw new Error(`Unexpected fetch: ${requestUrl}`)
+    })
+
+    vi.stubGlobal('fetch', fetcher)
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [runnableWorkflow] },
+        global: { plugins: [pinia] },
+      })
+
+      await flushPromises()
+      await wrapper.get('.issue-card').trigger('click')
+      wrapper.getComponent(Select).vm.$emit('update:modelValue', 'workflow-runner')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-run-button"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="issue-run-status"]').text()).toContain('Run queued: run-issue-4')
+
+      await wrapper.get('[data-testid="issue-detail-back"]').trigger('click')
+      await flushPromises()
+
+      expect(fetcher).toHaveBeenCalledWith('http://127.0.0.1:43117/runs/run-issue-4')
+      expect(wrapper.get('[data-testid="knowledge-base-update-4"]').attributes('disabled')).toBeUndefined()
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('does not open issue details when the Knowledge Base button receives keyboard input', async () => {
+    window.localStorage.clear()
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const requestUrl = String(input)
+
+      if (requestUrl === RUNNER_REPOSITORY_ENDPOINT) {
+        return new Response(JSON.stringify({
+          repoPath: '/workspace/Tsumugi',
+          repositoryFullName: 'KamiC6238/Tsumugi',
+          mode: 'dry-run',
+          capabilities: { knowledgeBaseUpdates: true },
+        }), { status: 200 })
+      }
+
+      if (requestUrl === DEFAULT_WORKFLOW_RUNNER_ENDPOINT) {
+        return new Response(JSON.stringify({
+          runId: 'run-issue-4',
+          status: 'completed',
+          artifactDir: 'artifacts/runs/run-issue-4',
+        }), { status: 202 })
+      }
+
+      if (requestUrl.startsWith('https://api.github.com/repos/KamiC6238/Tsumugi/issues')) {
+        return new Response(JSON.stringify([
+          {
+            id: 21,
+            number: 4,
+            title: '新增一篇博客',
+            state: 'open',
+            html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+            user: { login: 'KamiC6238' },
+            labels: [{ name: 'documentation' }],
+            comments: 3,
+            created_at: '2026-04-15T00:00:00Z',
+            updated_at: '2026-04-16T00:00:00Z',
+          },
+        ]), { status: 200 })
+      }
+
+      throw new Error(`Unexpected fetch: ${requestUrl}`)
+    })
+
+    vi.stubGlobal('fetch', fetcher)
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [runnableWorkflow] },
+        global: { plugins: [pinia] },
+      })
+
+      await flushPromises()
+      await wrapper.get('.issue-card').trigger('click')
+      wrapper.getComponent(Select).vm.$emit('update:modelValue', 'workflow-runner')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-run-button"]').trigger('click')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-detail-back"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="knowledge-base-update-4"]').attributes('disabled')).toBeUndefined()
+
+      await wrapper.get('[data-testid="knowledge-base-update-4"]').trigger('keydown.enter')
+      await wrapper.get('[data-testid="knowledge-base-update-4"]').trigger('keydown.space')
+
+      expect(wrapper.find('[data-testid="issue-detail"]').exists()).toBe(false)
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('does not reuse a completed run for the same issue number after switching repositories', async () => {
+    window.localStorage.clear()
+    const otherRepository: GithubRepository = {
+      owner: 'KamiC6238',
+      name: 'Other',
+      fullName: 'KamiC6238/Other',
+      remoteUrl: 'git@github.com:KamiC6238/Other.git',
+      localName: 'Other',
+    }
+    let runnerStatusCalls = 0
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = String(input)
+
+      if (requestUrl === RUNNER_REPOSITORY_ENDPOINT) {
+        runnerStatusCalls += 1
+        const body = JSON.parse(String(init?.body)) as { repository?: { fullName?: string } }
+        const runnerRepositoryFullName = body.repository?.fullName ?? repository.fullName
+
+        return new Response(JSON.stringify({
+          repoPath: `/workspace/${runnerRepositoryFullName.split('/')[1]}`,
+          repositoryFullName: runnerRepositoryFullName,
+          mode: 'dry-run',
+          capabilities: { knowledgeBaseUpdates: true },
+        }), { status: 200 })
+      }
+
+      if (requestUrl === DEFAULT_WORKFLOW_RUNNER_ENDPOINT) {
+        return new Response(JSON.stringify({
+          runId: 'run-issue-4',
+          status: 'completed',
+          artifactDir: 'artifacts/runs/run-issue-4',
+        }), { status: 202 })
+      }
+
+      if (requestUrl.startsWith('https://api.github.com/repos/KamiC6238/Tsumugi/issues')) {
+        return new Response(JSON.stringify([
+          {
+            id: 21,
+            number: 4,
+            title: '新增一篇博客',
+            state: 'open',
+            html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+            user: { login: 'KamiC6238' },
+            labels: [{ name: 'documentation' }],
+            comments: 3,
+            created_at: '2026-04-15T00:00:00Z',
+            updated_at: '2026-04-16T00:00:00Z',
+          },
+        ]), { status: 200 })
+      }
+
+      if (requestUrl.startsWith('https://api.github.com/repos/KamiC6238/Other/issues')) {
+        return new Response(JSON.stringify([
+          {
+            id: 41,
+            number: 4,
+            title: '另一个仓库的同号 issue',
+            state: 'open',
+            html_url: 'https://github.com/KamiC6238/Other/issues/4',
+            user: { login: 'KamiC6238' },
+            labels: [],
+            comments: 0,
+            created_at: '2026-04-17T00:00:00Z',
+            updated_at: '2026-04-18T00:00:00Z',
+          },
+        ]), { status: 200 })
+      }
+
+      throw new Error(`Unexpected fetch: ${requestUrl}`)
+    })
+
+    vi.stubGlobal('fetch', fetcher)
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [runnableWorkflow] },
+        global: { plugins: [pinia] },
+      })
+
+      await flushPromises()
+      await wrapper.get('.issue-card').trigger('click')
+      wrapper.getComponent(Select).vm.$emit('update:modelValue', 'workflow-runner')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-run-button"]').trigger('click')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-detail-back"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="knowledge-base-update-4"]').attributes('disabled')).toBeUndefined()
+
+      store.selectRepository(otherRepository)
+      await flushPromises()
+
+      expect(runnerStatusCalls).toBe(3)
+      expect(wrapper.text()).toContain('另一个仓库的同号 issue')
+      expect(wrapper.get('[data-testid="knowledge-base-update-4"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.get('[data-testid="knowledge-base-status-4"]').text())
+        .toBe('Run the issue workflow before updating the Knowledge base.')
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('keeps Knowledge Base updates disabled when the runner does not expose the capability', async () => {
+    window.localStorage.clear()
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const requestUrl = String(input)
+
+      if (requestUrl === RUNNER_REPOSITORY_ENDPOINT) {
+        return new Response(JSON.stringify({
+          repoPath: '/workspace/Tsumugi',
+          repositoryFullName: 'KamiC6238/Tsumugi',
+          mode: 'dry-run',
+          capabilities: { knowledgeBaseUpdates: false },
+        }), { status: 200 })
+      }
+
+      if (requestUrl === DEFAULT_WORKFLOW_RUNNER_ENDPOINT) {
+        return new Response(JSON.stringify({
+          runId: 'run-issue-4',
+          status: 'completed',
+          artifactDir: 'artifacts/runs/run-issue-4',
+        }), { status: 202 })
+      }
+
+      if (requestUrl.startsWith('https://api.github.com/repos/KamiC6238/Tsumugi/issues')) {
+        return new Response(JSON.stringify([
+          {
+            id: 21,
+            number: 4,
+            title: '新增一篇博客',
+            state: 'open',
+            html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+            user: { login: 'KamiC6238' },
+            labels: [{ name: 'documentation' }],
+            comments: 3,
+            created_at: '2026-04-15T00:00:00Z',
+            updated_at: '2026-04-16T00:00:00Z',
+          },
+        ]), { status: 200 })
+      }
+
+      throw new Error(`Unexpected fetch: ${requestUrl}`)
+    })
+
+    vi.stubGlobal('fetch', fetcher)
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [runnableWorkflow] },
+        global: { plugins: [pinia] },
+      })
+
+      await flushPromises()
+      await wrapper.get('.issue-card').trigger('click')
+      wrapper.getComponent(Select).vm.$emit('update:modelValue', 'workflow-runner')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-run-button"]').trigger('click')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-detail-back"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="knowledge-base-update-4"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.get('[data-testid="knowledge-base-status-4"]').text())
+        .toBe('Local runner does not support Knowledge Base updates.')
+      expect(fetcher).not.toHaveBeenCalledWith(
+        'http://127.0.0.1:43117/runs/run-issue-4/knowledge-base',
+        expect.anything(),
+      )
+    }
+    finally {
+      vi.unstubAllGlobals()
+      window.localStorage.clear()
+    }
+  })
+
+  it('keeps Knowledge Base updates disabled when the runner repository does not match', async () => {
+    window.localStorage.clear()
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === RUNNER_REPOSITORY_ENDPOINT) {
+        return new Response(JSON.stringify({
+          repoPath: '/workspace/Other',
+          repositoryFullName: 'KamiC6238/Other',
+          mode: 'dry-run',
+          capabilities: { knowledgeBaseUpdates: true },
+        }), { status: 200 })
+      }
+
+      if (String(input) === DEFAULT_WORKFLOW_RUNNER_ENDPOINT) {
+        return new Response(JSON.stringify({
+          runId: 'run-issue-4',
+          status: 'completed',
+          artifactDir: 'artifacts/runs/run-issue-4',
+        }), { status: 202 })
+      }
+
+      return new Response(JSON.stringify([
+        {
+          id: 21,
+          number: 4,
+          title: '新增一篇博客',
+          state: 'open',
+          html_url: 'https://github.com/KamiC6238/Tsumugi/issues/4',
+          user: { login: 'KamiC6238' },
+          labels: [{ name: 'documentation' }],
+          comments: 3,
+          created_at: '2026-04-15T00:00:00Z',
+          updated_at: '2026-04-16T00:00:00Z',
+        },
+      ]), { status: 200 })
+    })
+
+    vi.stubGlobal('fetch', fetcher)
+
+    try {
+      const pinia = createPinia()
+      const store = useGithubTasksStore(pinia)
+
+      store.selectRepository(repository)
+
+      const wrapper = mount(TasksPanel, {
+        props: { workflows: [runnableWorkflow] },
+        global: { plugins: [pinia] },
+      })
+
+      await flushPromises()
+      await wrapper.get('.issue-card').trigger('click')
+      wrapper.getComponent(Select).vm.$emit('update:modelValue', 'workflow-runner')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-run-button"]').trigger('click')
+      await flushPromises()
+      await wrapper.get('[data-testid="issue-detail-back"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="knowledge-base-update-4"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.get('[data-testid="knowledge-base-status-4"]').text())
+        .toBe('Local runner repository does not match the selected repository.')
     }
     finally {
       vi.unstubAllGlobals()

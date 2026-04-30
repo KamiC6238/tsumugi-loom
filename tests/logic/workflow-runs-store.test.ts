@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { GithubIssue } from '../../src/lib/github'
+import type { GithubIssue, GithubRepository } from '../../src/lib/github'
 import type { WorkflowRecord } from '../../src/lib/workflows'
 import type { WorkflowRunSubmitter } from '../../src/stores/workflowRuns'
 import { createWorkflowRunSubmitter, useWorkflowRunsStore } from '../../src/stores/workflowRuns'
@@ -17,6 +17,14 @@ const issue: GithubIssue = {
   comments: 2,
   createdAt: '2026-04-28T00:00:00Z',
   updatedAt: '2026-04-29T00:00:00Z',
+}
+
+const repository: GithubRepository = {
+  owner: 'octo-org',
+  name: 'hello-world',
+  fullName: 'octo-org/hello-world',
+  remoteUrl: 'git@github.com:octo-org/hello-world.git',
+  localName: 'hello-world',
 }
 
 const workflow: WorkflowRecord = {
@@ -65,6 +73,7 @@ describe('workflow runs store', () => {
 
     const wasStarted = await store.startIssueWorkflowRun({
       issue,
+      repository,
       workflow,
       submitter,
       now: new Date('2026-04-29T12:00:00.000Z'),
@@ -75,6 +84,11 @@ describe('workflow runs store', () => {
     expect(submitter).toHaveBeenCalledWith(expect.objectContaining({
       runId: '20260429-120000-issue-4-workflow-1-abc123',
       issue,
+      repository: {
+        owner: 'octo-org',
+        name: 'hello-world',
+        fullName: 'octo-org/hello-world',
+      },
     }))
     expect(store.status).toBe('submitted')
     expect(store.latestSubmission).toEqual({
@@ -82,7 +96,65 @@ describe('workflow runs store', () => {
       status: 'queued',
       artifactDir: 'artifacts/runs/20260429-120000-issue-4-workflow-1-abc123',
     })
+    expect(store.getLatestIssueRun(issue.number)).toEqual({
+      runId: '20260429-120000-issue-4-workflow-1-abc123',
+      status: 'queued',
+      artifactDir: 'artifacts/runs/20260429-120000-issue-4-workflow-1-abc123',
+    })
     expect(store.errorMessage).toBeNull()
+  })
+
+  it('refreshes a single issue run status without replacing other issue submissions', async () => {
+    const store = useWorkflowRunsStore()
+    const submitter = vi.fn(async (request) => ({
+      runId: request.runId,
+      status: 'queued',
+      artifactDir: `artifacts/runs/${request.runId}`,
+    })) satisfies WorkflowRunSubmitter
+
+    await store.startIssueWorkflowRun({
+      issue,
+      repository,
+      workflow,
+      submitter,
+      now: new Date('2026-04-29T12:00:00.000Z'),
+      randomSuffix: 'abc123',
+    })
+    await store.startIssueWorkflowRun({
+      issue: { ...issue, id: 22, number: 5, title: 'Other issue' },
+      repository,
+      workflow,
+      submitter,
+      now: new Date('2026-04-29T12:01:00.000Z'),
+      randomSuffix: 'def456',
+    })
+
+    const fetcher = vi.fn(async (runId: string) => ({
+      runId,
+      status: 'completed',
+      artifactDir: `artifacts/runs/${runId}`,
+    }))
+
+    const wasRefreshed = await store.refreshIssueWorkflowRunStatus({
+      issueNumber: 4,
+      fetcher,
+    })
+
+    expect(wasRefreshed).toBe(true)
+    expect(fetcher).toHaveBeenCalledWith('20260429-120000-issue-4-workflow-1-abc123')
+    expect(store.getLatestIssueRun(4)?.status).toBe('completed')
+    expect(store.getLatestIssueRun(5)?.status).toBe('queued')
+  })
+
+  it('does not refresh an unknown issue run', async () => {
+    const store = useWorkflowRunsStore()
+    const fetcher = vi.fn()
+
+    await expect(store.refreshIssueWorkflowRunStatus({
+      issueNumber: 99,
+      fetcher,
+    })).resolves.toBe(false)
+    expect(fetcher).not.toHaveBeenCalled()
   })
 
   it('does not call the runner when the workflow is missing a node skill', async () => {
@@ -98,6 +170,7 @@ describe('workflow runs store', () => {
 
     const wasStarted = await store.startIssueWorkflowRun({
       issue,
+      repository,
       workflow: incompleteWorkflow,
       submitter,
     })
@@ -116,6 +189,7 @@ describe('workflow runs store', () => {
 
     const wasStarted = await store.startIssueWorkflowRun({
       issue,
+      repository,
       workflow,
       submitter,
     })
@@ -136,6 +210,7 @@ describe('workflow runs store', () => {
 
     const wasStarted = await store.startIssueWorkflowRun({
       issue,
+      repository,
       workflow,
       submitter: createWorkflowRunSubmitter('http://127.0.0.1:43117/runs'),
       now: new Date('2026-04-29T12:00:00.000Z'),

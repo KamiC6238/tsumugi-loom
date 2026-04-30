@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia'
 import {
   ArrowLeftIcon,
+  FileTextIcon,
   KeyRoundIcon,
   PlusIcon,
   PlayIcon,
@@ -21,10 +22,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { parseGithubRepositoryFromGitConfig } from '@/lib/github'
-import type { GithubIssue } from '@/lib/github'
+import type { GithubIssue, GithubRepository } from '@/lib/github'
+import { getKnowledgeBaseUpdateReadiness } from '@/lib/knowledgeBase'
 import { getWorkflowRunReadiness } from '@/lib/workflowRuns'
 import type { WorkflowRecord } from '@/lib/workflows'
 import { useGithubTasksStore } from '@/stores/githubTasks'
+import { useKnowledgeBaseStore } from '@/stores/knowledgeBase'
 import { useWorkflowRunsStore } from '@/stores/workflowRuns'
 
 interface DirectoryHandleLike {
@@ -49,6 +52,7 @@ const props = withDefaults(defineProps<{
 
 const githubTasksStore = useGithubTasksStore()
 const workflowRunsStore = useWorkflowRunsStore()
+const knowledgeBaseStore = useKnowledgeBaseStore()
 const {
   selectedRepository,
   authToken,
@@ -67,6 +71,7 @@ const {
   errorMessage: workflowRunErrorMessage,
   isSubmitting: isWorkflowRunSubmitting,
 } = storeToRefs(workflowRunsStore)
+const { runnerStatus: knowledgeBaseRunnerStatus } = storeToRefs(knowledgeBaseStore)
 
 const tokenInput = shallowRef('')
 const isPickingRepository = shallowRef(false)
@@ -125,13 +130,22 @@ const workflowRunStatusTone = computed(() => {
   return workflowRunStatus.value === 'submitted' ? 'success' : 'neutral'
 })
 
-watch([selectedRepository, authToken], () => {
+watch([selectedRepository, authToken], ([repository], [previousRepository] = [null, null]) => {
+  if (repository?.fullName !== previousRepository?.fullName) {
+    selectedIssueId.value = null
+    workflowRunsStore.resetWorkflowRunStatus()
+    workflowRunsStore.resetIssueWorkflowRuns()
+    knowledgeBaseStore.resetIssueRunStates()
+  }
+
   if (!selectedRepository.value) {
     selectedIssueId.value = null
+    knowledgeBaseStore.resetRunnerStatus()
     return
   }
 
   void githubTasksStore.refreshIssues()
+  void syncSelectedRepositoryWithRunner(selectedRepository.value)
 }, { immediate: true })
 
 watch([selectedIssue, status], ([issue, nextStatus]) => {
@@ -165,19 +179,125 @@ function openIssueDetail(issueId: number) {
   selectedIssueId.value = issueId
 }
 
-function returnToIssueList() {
+async function returnToIssueList() {
+  if (selectedIssue.value) {
+    await refreshIssueRunForKnowledgeBase(selectedIssue.value)
+  }
+
   selectedIssueId.value = null
 }
 
 async function runSelectedWorkflow() {
-  if (!canRunIssueWorkflow.value || !selectedIssue.value || !selectedWorkflow.value) {
+  if (!canRunIssueWorkflow.value || !selectedIssue.value || !selectedWorkflow.value || !selectedRepository.value) {
+    return
+  }
+
+  const wasRepositorySynced = await knowledgeBaseStore.syncRunnerRepository(selectedRepository.value)
+
+  if (!wasRepositorySynced) {
+    workflowRunsStore.setWorkflowRunError(
+      knowledgeBaseStore.runnerStatusErrorMessage ?? 'Local runner could not select the repository.',
+    )
     return
   }
 
   await workflowRunsStore.startIssueWorkflowRun({
     issue: selectedIssue.value,
+    repository: selectedRepository.value,
     workflow: selectedWorkflow.value,
   })
+}
+
+async function syncSelectedRepositoryWithRunner(repository: GithubRepository) {
+  await knowledgeBaseStore.syncRunnerRepository(repository)
+}
+
+async function updateIssueKnowledgeBase(issue: GithubIssue) {
+  const run = getIssueWorkflowRun(issue)
+
+  if (selectedRepository.value) {
+    await knowledgeBaseStore.syncRunnerRepository(selectedRepository.value)
+  }
+
+  await knowledgeBaseStore.startKnowledgeBaseUpdate({
+    issue,
+    repository: selectedRepository.value,
+    run,
+    runnerStatus: knowledgeBaseRunnerStatus.value,
+  })
+}
+
+async function refreshIssueRunForKnowledgeBase(issue: GithubIssue) {
+  const run = getIssueWorkflowRun(issue)
+
+  if (!run || run.status === 'completed') {
+    return
+  }
+
+  try {
+    await workflowRunsStore.refreshIssueWorkflowRunStatus({ issueNumber: issue.number })
+  }
+  catch {
+    // Returning to the list should not be blocked by a transient local runner failure.
+  }
+}
+
+function openIssueDetailFromKeyboard(event: KeyboardEvent, issueId: number) {
+  event.preventDefault()
+  openIssueDetail(issueId)
+}
+
+function getIssueWorkflowRun(issue: GithubIssue) {
+  return workflowRunsStore.getLatestIssueRun(issue.number)
+}
+
+function getIssueKnowledgeBaseReadiness(issue: GithubIssue) {
+  return getKnowledgeBaseUpdateReadiness({
+    repository: selectedRepository.value,
+    runnerStatus: knowledgeBaseRunnerStatus.value,
+    run: getIssueWorkflowRun(issue),
+  })
+}
+
+function canUpdateIssueKnowledgeBase(issue: GithubIssue) {
+  const run = getIssueWorkflowRun(issue)
+  const state = knowledgeBaseStore.getIssueRunState(issue.number, run?.runId)
+
+  return getIssueKnowledgeBaseReadiness(issue).canUpdate && state.status !== 'updating'
+}
+
+function getIssueKnowledgeBaseStatusMessage(issue: GithubIssue) {
+  const run = getIssueWorkflowRun(issue)
+  const state = knowledgeBaseStore.getIssueRunState(issue.number, run?.runId)
+
+  if (state.status === 'updating') {
+    return 'Updating Knowledge base'
+  }
+
+  if (state.status === 'updated' && state.result) {
+    return `Updated ${state.result.targetPath} with ${state.result.factCount} facts`
+  }
+
+  if (state.status === 'error' && state.errorMessage) {
+    return state.errorMessage
+  }
+
+  return getIssueKnowledgeBaseReadiness(issue).message
+}
+
+function getIssueKnowledgeBaseStatusTone(issue: GithubIssue) {
+  const run = getIssueWorkflowRun(issue)
+  const state = knowledgeBaseStore.getIssueRunState(issue.number, run?.runId)
+
+  if (state.status === 'updated') {
+    return 'success'
+  }
+
+  if (state.status === 'error' || !getIssueKnowledgeBaseReadiness(issue).canUpdate) {
+    return 'error'
+  }
+
+  return 'neutral'
 }
 
 async function openRepositoryPicker() {
@@ -485,11 +605,14 @@ function formatIssueDate(value: string) {
 
         <ul class="issue-grid">
           <li v-for="issue in issues" :key="issue.id">
-            <button
-              type="button"
+            <article
               class="issue-card"
+              role="button"
+              tabindex="0"
               :aria-label="`Open issue #${issue.number} details`"
               @click="openIssueDetail(issue.id)"
+              @keydown.enter="openIssueDetailFromKeyboard($event, issue.id)"
+              @keydown.space="openIssueDetailFromKeyboard($event, issue.id)"
             >
               <span class="issue-card-header">
                 <span class="issue-number">#{{ issue.number }}</span>
@@ -499,7 +622,30 @@ function formatIssueDate(value: string) {
                 {{ issue.title }}
               </span>
               <span class="issue-meta">{{ issue.author }}</span>
-            </button>
+              <span class="issue-knowledge-base" @click.stop>
+                <Button
+                  type="button"
+                  variant="outline"
+                  class="knowledge-base-button"
+                  :disabled="!canUpdateIssueKnowledgeBase(issue)"
+                  :data-testid="`knowledge-base-update-${issue.number}`"
+                  @click.stop="updateIssueKnowledgeBase(issue)"
+                  @keydown.enter.stop
+                  @keydown.space.stop
+                >
+                  <FileTextIcon aria-hidden="true" />
+                  <span>更新 Knowledge base</span>
+                </Button>
+                <span
+                  v-if="getIssueKnowledgeBaseStatusMessage(issue)"
+                  class="knowledge-base-status"
+                  :class="`knowledge-base-status--${getIssueKnowledgeBaseStatusTone(issue)}`"
+                  :data-testid="`knowledge-base-status-${issue.number}`"
+                >
+                  {{ getIssueKnowledgeBaseStatusMessage(issue) }}
+                </span>
+              </span>
+            </article>
           </li>
         </ul>
       </section>
@@ -799,6 +945,52 @@ function formatIssueDate(value: string) {
   line-height: 1.32;
   overflow-wrap: anywhere;
   text-decoration: none;
+}
+
+.issue-knowledge-base {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+  padding-top: 0.25rem;
+}
+
+.knowledge-base-button {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 2rem;
+  gap: 0.35rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.5rem;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.knowledge-base-button svg {
+  width: 0.78rem;
+  height: 0.78rem;
+}
+
+.knowledge-base-button span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.knowledge-base-status {
+  color: var(--text-subtle);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.knowledge-base-status--error {
+  color: var(--blocked);
+}
+
+.knowledge-base-status--success {
+  color: var(--completed);
 }
 
 .issue-detail-toolbar {

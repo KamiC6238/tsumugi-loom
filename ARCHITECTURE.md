@@ -1,6 +1,6 @@
 # ARCHITECTURE
 
-状态：2026-04-29 文档拆分后的业务地图
+状态：2026-04-30 Knowledge Base 更新后的业务地图
 
 ## 1. 文档职责
 
@@ -25,7 +25,7 @@
 
 这个仓库当前是 Tsumugi Loom 的前端探索项目，技术栈以 Vue 3、TypeScript 和 Vite 为主，并结合 Tailwind CSS 4、shadcn-vue / Reka UI 以及 Vue Flow 搭建交互壳层。
 
-当前实现目标是验证一个“侧边栏管理多个 workflow + 主画布展示当前 workflow + 全局 skill catalog 选择 + GitHub issues 任务入口”的本地单页应用体验。
+当前实现目标是验证一个“侧边栏管理多个 workflow + 主画布展示当前 workflow + 全局 skill catalog 选择 + GitHub issues 任务入口 + issue Run 后更新目标仓库 Knowledge Base”的本地单页应用体验。
 
 当前用户可见能力：
 
@@ -35,10 +35,11 @@
 4. 从 `.github/skills` 读取全局 skill catalog，在 Skills 面板中按 macro/node 分类展示并切换添加状态。
 5. 在节点 Drawer 中从已添加的 node skills 中选择节点 skill。
 6. 从 Tasks 面板选择本地 GitHub 仓库目录，解析 `.git/config`，通过 GitHub issues API 展示 open issues。
-7. 在 issue detail 中选择 workflow 后，通过本地 Copilot runner endpoint 提交 workflow Run；Run 请求要求 workflow 每个节点都已配置 skill。
+7. 在 issue detail 中选择 workflow 后，通过本地 Copilot runner endpoint 提交 workflow Run；Run 请求要求 workflow 每个节点都已配置 skill，并携带 selected repository identity。
 8. 通过 `scripts/loom/copilot-runner.mjs` 在浏览器外创建 run artifact，并为每个节点启动新的 Copilot CLI session。
-9. 把 GitHub selected repository、PAT 和 light/dark 颜色偏好分别保存在 localStorage。
-10. 用 Vitest 和 Playwright 覆盖状态逻辑、主题偏好、GitHub tasks 状态、workflow run 派生逻辑与关键 UI 交互。
+9. 在 completed issue Run 后，从 issue 列表触发“更新 Knowledge base”，由本地 runner 从 run artifact 提炼事实并创建或更新目标仓库 `docs/knowledge-base.md`。
+10. 把 GitHub selected repository、PAT 和 light/dark 颜色偏好分别保存在 localStorage。
+11. 用 Vitest 和 Playwright 覆盖状态逻辑、主题偏好、GitHub tasks 状态、workflow run 派生逻辑、Knowledge Base 更新逻辑与关键 UI 交互。
 
 ## 3. 文档路由表
 
@@ -47,6 +48,7 @@
 | workflow 创建、侧边栏、活动 workflow、画布、节点 Drawer | [docs/workflow-studio.md](docs/workflow-studio.md) | `src/App.vue`, `src/composables/useWorkflowStudio.ts`, `src/composables/useWorkflow.ts`, `src/stores/workflows.ts`, `src/lib/workflows.ts`, `src/components/workflow-studio/` | 用户契约、状态归属、节点保存规则或面板切换行为变化时 |
 | skill catalog、Skills 面板、macro/node 分类、节点 skill assignment | [docs/skills-catalog.md](docs/skills-catalog.md) | `src/lib/skills.ts`, `src/stores/skills.ts`, `src/components/workflow-studio/SkillsPanel.vue`, `src/components/workflow-studio/WorkflowNodeDrawer.vue`, `.github/skills/` | skill 解析、默认分类、添加规则或节点可选 skill 规则变化时 |
 | GitHub repository 选择、PAT、issues API、Tasks 面板、issue workflow Run | [docs/github-tasks.md](docs/github-tasks.md) | `src/lib/github.ts`, `src/lib/workflowRuns.ts`, `src/stores/githubTasks.ts`, `src/stores/workflowRuns.ts`, `src/components/workflow-studio/TasksPanel.vue`, `scripts/loom/copilot-runner.mjs` | repository 解析、API 契约、localStorage key、错误处理、issue UI 或本地 runner 契约变化时 |
+| issue Run 后 Knowledge Base 更新 | [docs/knowledge-base-updates.md](docs/knowledge-base-updates.md) | `src/lib/knowledgeBase.ts`, `src/stores/knowledgeBase.ts`, `src/stores/workflowRuns.ts`, `src/components/workflow-studio/TasksPanel.vue`, `scripts/loom/copilot-runner.mjs` | runner status、completed run readiness、target path、文档 merge 规则、update artifact 或 issue 列表按钮变化时 |
 | light/dark 颜色模式、主题持久化、Sidebar 品牌区切换 | [docs/color-mode.md](docs/color-mode.md) | `src/composables/useColorMode.ts`, `src/main.ts`, `src/style.css`, `src/components/workflow-studio/ThemeModeToggle.vue` | 主题状态、DOM 同步、localStorage key 或 UI 切换契约变化时 |
 | 目录职责、工具链、workflow artifacts、长期文档归属 | [docs/project-structure.md](docs/project-structure.md) | `src/`, `tests/`, `scripts/loom/`, `artifacts/workflows/`, `docs/` | 新增顶层目录、改变文档归属、改变 workflow artifact 约定时 |
 | 测试入口、覆盖范围、验证策略 | [docs/validation-map.md](docs/validation-map.md) | `tests/logic/`, `tests/ui/`, `vitest.config.ts`, `playwright.config.ts`, `package.json` | 新增测试层级、改变测试命令、改变模块验证责任时 |
@@ -61,10 +63,11 @@
 3. Skills Catalog：负责从 `.github/skills` 读取 skill catalog、macro/node 分类、添加状态和节点 skill 候选，详见 [docs/skills-catalog.md](docs/skills-catalog.md)。
 4. GitHub Tasks：负责本地 GitHub repository 选择、PAT、open issues 读取、issue detail 展示和 workflow Run 提交，详见 [docs/github-tasks.md](docs/github-tasks.md)。
 5. Workflow Runs：负责从 issue + workflow 派生本地 runner payload，校验节点 skill 配置，并通过本地 Copilot runner 执行浏览器外 workflow。
-6. Color Mode：负责 light/dark 偏好、根元素 class/data attribute 和 `color-scheme` 同步，详见 [docs/color-mode.md](docs/color-mode.md)。
-7. UI primitives：`src/components/ui/` 封装 shadcn-vue / Reka UI / Vaul 相关基础组件，供 feature 组件组合使用。
-8. Pure logic：`src/lib/` 承载与视图解耦的 workflow、skills、GitHub helper 和 workflow run payload 逻辑，是高价值逻辑测试的主要目标。
-9. Pinia stores：`src/stores/` 承载本地会话状态、全局 added skills 状态、GitHub tasks 状态和 workflow run 提交状态。
+6. Knowledge Base Updates：负责判断 issue Run 是否可用于更新目标仓库 Knowledge Base，向 runner 提交更新请求，并展示 issue 列表状态，详见 [docs/knowledge-base-updates.md](docs/knowledge-base-updates.md)。
+7. Color Mode：负责 light/dark 偏好、根元素 class/data attribute 和 `color-scheme` 同步，详见 [docs/color-mode.md](docs/color-mode.md)。
+8. UI primitives：`src/components/ui/` 封装 shadcn-vue / Reka UI / Vaul 相关基础组件，供 feature 组件组合使用。
+9. Pure logic：`src/lib/` 承载与视图解耦的 workflow、skills、GitHub helper、workflow run payload 和 Knowledge Base readiness 逻辑，是高价值逻辑测试的主要目标。
+10. Pinia stores：`src/stores/` 承载本地会话状态、全局 added skills 状态、GitHub tasks 状态、workflow run 提交状态和 Knowledge Base 更新状态。
 
 ## 5. 系统边界
 
@@ -74,7 +77,8 @@
 2. 基于 Pinia 的本地 workflow、added skills 与 GitHub tasks 状态管理。
 3. 侧边栏、创建对话框、节点 Drawer、主画布、全局 Skills 面板和 GitHub Tasks 面板组成的 UI shell。
 4. Vue Flow 工作流可视化渲染。
-5. localStorage 中的颜色模式偏好、GitHub selected repository 和 PAT。
+5. issue 列表中的 Knowledge Base 更新入口和运行时更新状态。
+6. localStorage 中的颜色模式偏好、GitHub selected repository 和 PAT。
 
 仓库支撑边界：
 
@@ -82,6 +86,7 @@
 2. workflow artifacts、长期文档和本地自动化脚本。
 3. Vitest 逻辑测试与 Playwright UI 测试。
 4. `scripts/loom/copilot-runner.mjs` 是浏览器外的本地执行边界，负责接收 allowlist origin 的 Run 请求、创建 `artifacts/runs/` 产物，并以新 Copilot CLI session 执行每个节点。
+5. runner 还负责暴露当前绑定 repository status，并从 completed run artifact 创建或更新目标仓库的 `docs/knowledge-base.md`。
 
 ## 6. 跨模块稳定事实
 
@@ -95,8 +100,10 @@
 6. Skills 的 macro/node 分类影响节点 Drawer 候选项；节点 skill assignment 使用 node skills。
 7. issue workflow Run 要求被选 workflow 的每个节点都有 skill assignment；缺失 skill 时前端禁用 Run。
 8. 本地 runner 执行节点时不复用 Copilot CLI session，节点上下文通过 run artifact 显式传递。
-9. GitHub tasks 的 selected repository 与 PAT 是独立的任务面板配置持久化。
-10. 颜色模式由 `useColorMode` 独立管理，和 workflow 领域状态分开。
+9. HTTP workflow Run 和 Knowledge Base 更新都要求前端先将 Tasks 当前 selected repository 推送给 repo-agnostic runner；runner 解析出的 current repository full name 必须与请求里的 repository identity 匹配。
+10. Knowledge Base 文档固定写入 runner current repository 的 `docs/knowledge-base.md`，同一 run 使用 managed entry marker 幂等更新。
+11. GitHub tasks 的 selected repository 与 PAT 是独立的任务面板配置持久化。
+12. 颜色模式由 `useColorMode` 独立管理，和 workflow 领域状态分开。
 
 ## 7. 持久化地图
 
@@ -108,6 +115,8 @@
 | GitHub PAT | `useGithubTasksStore` | `tsumugi-loom.github.authToken` | Tasks 面板刷新后恢复 |
 | GitHub issues、loading、error | `useGithubTasksStore` | 运行时内存 | repository 或 token 变化后重新请求 |
 | Workflow run submission | `useWorkflowRunsStore` | 运行时内存 | issue detail 中展示最近一次本地 runner 提交状态 |
+| Issue 到 latest run 映射 | `useWorkflowRunsStore` | 运行时内存 | issue 列表判断是否可更新 Knowledge Base |
+| Knowledge Base runner status 和更新状态 | `useKnowledgeBaseStore` | 运行时内存 | repository 变化后重新请求 runner status；刷新后丢失 |
 | 颜色模式 | `useColorMode` | `tsumugi-loom-color-mode` | 同步到 document root |
 
 ## 8. 验证地图

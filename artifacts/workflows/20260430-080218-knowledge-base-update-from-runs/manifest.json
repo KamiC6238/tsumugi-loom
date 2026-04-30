@@ -1,0 +1,10 @@
+{
+  "workflowId": "20260430-080218-knowledge-base-update-from-runs",
+  "slug": "knowledge-base-update-from-runs",
+  "goal": "为 issue Run 增加从执行产物提炼业务事实并写回目标仓库 Knowledge base 的能力",
+  "createdAt": "2026-04-30T08:02:18+0800",
+  "updatedAt": "2026-04-30T08:59:10+0800",
+  "currentStage": "complete",
+  "completedStages": ["plan", "coding", "testing", "review"],
+  "status": "completed"
+}
